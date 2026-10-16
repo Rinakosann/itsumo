@@ -2,7 +2,7 @@
 import { esc } from '../common/ui.js';
 import { state } from './state.js';
 import { t } from './strings.js';
-import { areaOf, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS } from '../../shared/constants.js';
+import { areaOf, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, TIPS, PHRASES } from '../../shared/constants.js';
 
 export const yen = (n) => `¥${Math.round(n).toLocaleString('ja-JP')}`;
 export const label = (list, id) => list.find((x) => x.id === id)?.en ?? '';
@@ -50,7 +50,10 @@ export function shopCard(s) {
         <h3>${esc(s.name.text)}</h3>
         <div class="sub">${esc(label(CATEGORIES, s.category))} · ${esc(a?.en ?? '')}</div>
         <div class="price-line">${price(s.priceJPY)} <span class="muted">${t('perPerson')}</span></div>
+        ${s.localsOrder?.text ? `<div class="locals-order">🍢 <b>${t('localsOrder')}:</b> ${esc(s.localsOrder.text)}</div>` : ''}
         <div class="facts">
+          ${s.notInGuidebooks ? `<span class="fact special">📖 ${t('notInGuidebooks')}</span>` : ''}
+          ${s.firstGuests ? `<span class="fact first">✨ ${t('firstGuests')}</span>` : ''}
           <span class="fact">👥 ${esc(label(CUSTOMERS, s.customers))}</span>
           <span class="fact">🏮 ${esc(label(YEARS, s.years))}</span>
           <span class="fact">🚉 ${esc(stationText(s))}</span>
@@ -60,3 +63,21 @@ export function shopCard(s) {
 }
 
 export const paymentText = (p) => label(PAYMENTS, p);
+
+/** 来る前に知ってほしいこと（現金のみは支払い方法から自動で入れる） */
+export function tipsHtml(s) {
+  const list = [
+    ...(s.payment === 'cash' ? [t('cashTip')] : []),
+    ...(s.tips ?? []).map((id) => TIPS.find((x) => x.id === id)?.en).filter(Boolean),
+  ];
+  if (!list.length && !s.tipsNote?.text) return '';
+  return `<div class="section"><h4>🎒 ${t('beforeYouGo')}</h4>
+    <ul class="tips">${list.map((x) => `<li>${esc(x)}</li>`).join('')}${s.tipsNote?.text ? `<li>${translated(s.tipsNote)}</li>` : ''}</ul></div>`;
+}
+
+/** お店で使える日本語（名前が分かれば1行目に入れる） */
+export function phrasesHtml(name = '', withTitle = true) {
+  const fill = (x) => x.replaceAll('{name}', name || '___');
+  return `<div class="section">${withTitle ? `<h4>🗣️ ${t('phrasesTitle')}</h4>` : ''}<p class="note">${t('phrasesNote')}</p>
+    <div class="phrases">${PHRASES.map((p) => `<div class="phrase"><div class="ja" lang="ja">${esc(fill(p.ja))}</div><div class="romaji">${esc(fill(p.romaji))}</div><div class="en">${esc(fill(p.en))}</div></div>`).join('')}</div></div>`;
+}

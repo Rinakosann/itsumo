@@ -12,11 +12,20 @@ export function toPublic(s) {
     id: s.id, category: s.category, area: s.area, name: en(s.name), address: s.address, lat: s.lat, lng: s.lng, placeId: s.placeId,
     description: en(s.description), priceJPY: s.priceJPY, durationMin: s.durationMin, payment: s.payment, link: s.link,
     customers: s.customers, years: s.years, stationKm: s.stationKm,
+    localsOrder: en(s.localsOrder), notInGuidebooks: s.notInGuidebooks, welcome: en(s.welcome), tips: s.tips ?? [], tipsNote: en(s.tipsNote),
+    firstGuests: s._bookingCount === 0, // まだ予約がない＝最初の海外のお客さんになれる
     extra: { bring: en(x.bring), minPeople: x.minPeople ?? null, dietary: x.dietary ?? [], menuStyle: x.menuStyle ?? null },
     slots: s.slots ?? [], closedDays: s.closedDays, cutoff: s.cutoff,
     capacityMax: Math.max(0, ...(s.slots ?? []).map((x2) => x2.capacity)),
     publishedAt: s.publishedAt,
   };
+}
+
+/** 店舗ごとの予約数（「最初のお客さんになれる」の表示用。キャンセルは数えない） */
+export async function bookingCounts(shopIds) {
+  const rows = await prisma.booking.groupBy({ by: ['shopId'], where: { shopId: { in: shopIds }, status: 'confirmed' }, _count: true });
+  const map = Object.fromEntries(rows.map((r) => [r.shopId, r._count]));
+  return (id) => map[id] ?? 0;
 }
 
 /** 予約に必要な情報：受付停止日と、枠ごとの予約済み人数 */

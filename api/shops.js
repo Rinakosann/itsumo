@@ -2,19 +2,21 @@
 import { api, bad, notFound, str } from '../server/http.js';
 import { prisma } from '../server/db.js';
 import { currentUser } from '../server/auth.js';
-import { toPublic, availability } from '../server/shops.js';
+import { toPublic, availability, bookingCounts } from '../server/shops.js';
 
 export default api({
   /** 公開中の店舗（新着順） */
   async 'GET list'() {
     const shops = await prisma.shop.findMany({ where: { status: 'published' }, orderBy: { publishedAt: 'desc' } });
-    return { items: shops.map(toPublic) };
+    const count = await bookingCounts(shops.map((s) => s.id));
+    return { items: shops.map((s) => toPublic({ ...s, _bookingCount: count(s.id) })) };
   },
 
   async 'GET get'(ctx) {
     const s = await prisma.shop.findFirst({ where: { id: String(ctx.query.id ?? ''), status: 'published' } });
     if (!s) throw notFound();
-    return { item: { ...toPublic(s), ...(await availability(s.id)) } };
+    const count = await bookingCounts([s.id]);
+    return { item: { ...toPublic({ ...s, _bookingCount: count(s.id) }), ...(await availability(s.id)) } };
   },
 
   /** 成功指標：詳細ページの閲覧を1回ごとに記録 */

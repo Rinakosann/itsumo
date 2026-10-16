@@ -4,7 +4,7 @@ import { get, post } from '../../common/api.js';
 import { makeMap, mapsEnabled, googleMapsLink } from '../../common/maps.js';
 import { state, loadRates } from '../state.js';
 import { t, errText } from '../strings.js';
-import { price, rateNote, stationText, translated, handleOriginal, label, paymentText } from '../components.js';
+import { price, rateNote, stationText, translated, handleOriginal, label, paymentText, tipsHtml, phrasesHtml } from '../components.js';
 import { areaOf, CATEGORIES, CUSTOMERS, YEARS, DIETARY, MENU_STYLES, CUTOFFS } from '../../../shared/constants.js';
 
 export async function render(view, id) {
@@ -22,10 +22,15 @@ export async function render(view, id) {
       <h2>${translated(s.name)}</h2>
       <p class="sub">${esc(label(CATEGORIES, s.category))} · ${esc(a?.en ?? '')}</p>
       <div class="facts">
+        ${s.notInGuidebooks ? `<span class="fact special">📖 ${t('notInGuidebooks')}</span>` : ''}
+        ${s.firstGuests ? `<span class="fact first">✨ ${t('firstGuests')}</span>` : ''}
         <span class="fact">👥 ${t('customers')}: ${esc(label(CUSTOMERS, s.customers))}</span>
         <span class="fact">🏮 ${t('years')}: ${esc(label(YEARS, s.years))}</span>
         <span class="fact">🚉 ${esc(stationText(s))}</span>
       </div>
+
+      ${s.welcome?.text ? `<div class="owner-says"><span class="owner-ico">🧑‍🍳</span><div><b>${t('ownerSays')}</b><p class="owner-text">${translated(s.welcome)}</p></div></div>` : ''}
+      ${s.localsOrder?.text ? `<div class="locals-order big">🍢 <b>${t('localsOrder')}:</b> ${translated(s.localsOrder)}</div>` : ''}
 
       <div class="section price-box">
         <div class="big">${price(s.priceJPY)} <span class="muted">${t('perPerson')}</span></div>
@@ -46,6 +51,8 @@ export async function render(view, id) {
         <div><b>📅</b>${esc(label(CUTOFFS, s.cutoff))}</div>
       </div>
 
+      ${tipsHtml(s)}
+
       <div class="section">
         <h4>📍 ${t('address')}</h4>
         <p>${esc(s.address)}</p>
@@ -54,6 +61,7 @@ export async function render(view, id) {
         ${s.link ? `<a class="btn block" href="${esc(s.link)}" target="_blank" rel="noopener noreferrer nofollow">🔗 ${t('externalLink')} ↗</a><p class="warn-ext">${t('leaving')}: ${esc(s.link)}</p>` : ''}
       </div>
 
+      <details class="section"><summary>🗣️ ${t('phrasesTitle')}</summary>${phrasesHtml(state.user?.name, false)}</details>
       ${canBook ? '' : `<p class="notice info">${t('noSlots')}</p>`}
       <div class="sticky-actions">
         <button class="btn" data-chat>💬 ${t('chat')}</button>

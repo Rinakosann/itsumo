@@ -73,6 +73,27 @@ export const CANCEL_REASONS = [
   { id: 'other', ja: 'その他', en: 'Other' },
 ];
 
+// 来る前に知ってほしいこと（店主が選ぶ）。支払い方法（現金のみ）は自動で出す
+export const TIPS = [
+  { id: 'shoes', ja: '靴を脱いで上がります', en: 'You take your shoes off inside — wear socks you are happy to show.' },
+  { id: 'small', ja: '小さなお店です（席が少ない）', en: 'It is a small place with few seats. Please come on time.' },
+  { id: 'counter', ja: 'カウンター席です', en: 'You sit at the counter, close to the owner.' },
+  { id: 'quiet', ja: '静かに過ごしてください', en: 'Regulars enjoy a quiet atmosphere here.' },
+  { id: 'nophoto', ja: '店内の撮影はご遠慮ください', en: 'Please do not take photos inside.' },
+  { id: 'askphoto', ja: '撮影は一声かけてから', en: 'Ask before taking photos — a smile and pointing at your camera works.' },
+  { id: 'smoking', ja: '喫煙できる席があります', en: 'Smoking is allowed in some seats.' },
+  { id: 'japanese', ja: '店内の表示は日本語だけです', en: 'Signs and menus are only in Japanese — that is part of the fun.' },
+];
+
+// お店で使える日本語（旅行者向け・確定画面と詳細に出す）
+export const PHRASES = [
+  { ja: 'こんにちは。Tabi Localで予約した{name}です。', romaji: 'Konnichiwa. Tabi Local de yoyaku shita {name} desu.', en: "Hello. I'm {name}, I booked on Tabi Local." },
+  { ja: 'おすすめは何ですか？', romaji: 'Osusume wa nan desu ka?', en: 'What do you recommend?' },
+  { ja: '地元の人がよく頼むものをください。', romaji: 'Jimoto no hito ga yoku tanomu mono o kudasai.', en: 'I would like what the locals usually order.' },
+  { ja: 'これは食べられません。', romaji: 'Kore wa taberaremasen.', en: "I can't eat this." },
+  { ja: 'とてもおいしかったです。ありがとうございました！', romaji: 'Totemo oishikatta desu. Arigatou gozaimashita!', en: 'It was delicious. Thank you very much!' },
+];
+
 // 表示通貨（日本円が正。ほかは目安）
 export const CURRENCIES = ['SGD', 'USD', 'CNY', 'HKD', 'TWD', 'KRW', 'EUR'];
 

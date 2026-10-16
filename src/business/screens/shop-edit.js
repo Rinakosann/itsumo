@@ -6,7 +6,7 @@
 import { $, $$, esc, toast } from '../../common/ui.js';
 import { get, post } from '../../common/api.js';
 import { placeSearch, makeMap, mapsEnabled, distanceKm } from '../../common/maps.js';
-import { AREAS, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, LIMITS } from '../../../shared/constants.js';
+import { AREAS, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, LIMITS, TIPS } from '../../../shared/constants.js';
 
 const WEEK = ['日', '月', '火', '水', '木', '金', '土'];
 const ERR = { invalid_link: '外部リンクは http:// か https:// で始まるURLを入れてください。' };
@@ -71,6 +71,17 @@ export async function renderEdit(view, id) {
         </div>
         <label>主要駅からの距離（km・道のりの目安）＊<input name="stationKm" type="number" min="0" max="100" step="0.1" value="${s.stationKm ?? ''}" />
           <span class="muted small" id="km-hint">エリアの主要駅からの道のり。Googleマップでお店を選ぶと直線距離が参考として入ります。</span></label>
+
+        <label>地元の人がいつも頼むもの・すること（任意）<input name="localsOrder" maxlength="100" value="${esc(s.localsOrder?.ja ?? '')}" placeholder="例：常連さんはいつも、おでんの大根と熱燗" />
+          <span class="muted small">星の評価ではなく、地元の人のふだんの楽しみ方を伝えます。一覧とお店のページに大きく出ます。</span></label>
+        <label class="check"><input type="checkbox" name="notInGuidebooks" ${s.notInGuidebooks ? 'checked' : ''}/> ガイドブックや旅行サイトには載っていない</label>
+
+        <h4>👋 海外のお客様へ（任意）</h4>
+        <label>店主からのひとこと<input name="welcome" maxlength="100" value="${esc(s.welcome?.ja ?? '')}" placeholder="例：英語は話せませんが、海外の方も大歓迎です！" />
+          <span class="muted small">「断られたらどうしよう」という不安をなくすためのひとことです。英語に翻訳して表示します。</span></label>
+        <div class="label">来る前に知っておいてほしいこと</div>
+        <div class="checks">${TIPS.map((tp) => `<label class="chip-check"><input type="checkbox" name="tips" value="${tp.id}" ${s.tips?.includes(tp.id) ? 'checked' : ''}/> ${esc(tp.ja)}</label>`).join('')}</div>
+        <label>そのほか（任意）<input name="tipsNote" maxlength="200" value="${esc(s.tipsNote?.ja ?? '')}" placeholder="例：入口は路地の奥、赤いのれんが目印です" /></label>
 
         <h4>④ カテゴリ別の項目</h4>
         <div data-cat="experience">
@@ -154,6 +165,7 @@ export async function renderEdit(view, id) {
       bring: fd.get('bring'), minPeople: fd.get('minPeople'), dietary: fd.getAll('dietary'), allergyOk: fd.has('allergyOk'), menuStyle: fd.get('menuStyle'),
       slots: $$('.slot-row').map((r) => ({ time: r.querySelector('[name=slotTime]').value, capacity: r.querySelector('[name=slotCap]').value })).filter((x2) => x2.time),
       closedDays: fd.getAll('closedDays').map(Number), cutoff: fd.get('cutoff'),
+      localsOrder: fd.get('localsOrder'), notInGuidebooks: fd.has('notInGuidebooks'), welcome: fd.get('welcome'), tips: fd.getAll('tips'), tipsNote: fd.get('tipsNote'),
       lat: pos.lat, lng: pos.lng, placeId: pos.placeId,
     };
     const btn = e.submitter; btn.disabled = true; const label = btn.textContent; btn.textContent = '保存・翻訳中…';

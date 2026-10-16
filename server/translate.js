@@ -33,6 +33,15 @@ async function claude(text, from, to) {
   return res.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
 }
 
+// 用語集：機械翻訳で崩れやすい語（日本語 → 英語の固定訳）。誤訳を見つけたらここに足す
+const GLOSSARY = [
+  ['熱燗', 'hot sake'], ['冷酒', 'cold sake'], ['日本酒', 'sake'], ['焼酎', 'shochu'], ['お通し', 'otoshi (small starter)'],
+  ['常連さん', 'regulars'], ['常連', 'regulars'], ['一見さん', 'first-time guests'], ['おでん', 'oden'], ['大根', 'daikon radish'],
+  ['のれん', 'noren curtain'], ['暖簾', 'noren curtain'], ['座敷', 'tatami seating'], ['抹茶', 'matcha'], ['女将', 'okami (proprietress)'],
+  ['大将', 'the owner-chef'], ['おばんざい', 'obanzai (Kyoto home cooking)'], ['居酒屋', 'izakaya'], ['串カツ', 'kushikatsu'], ['焼き鳥', 'yakitori'],
+];
+const applyGlossary = (text) => GLOSSARY.reduce((t, [ja, en]) => t.replaceAll(ja, ` ${en} `), text);
+
 /** 失敗したら null */
 export async function translate(text, from, to) {
   const src = String(text ?? '').trim();
@@ -42,10 +51,11 @@ export async function translate(text, from, to) {
   try {
     // MyMemory は1回500文字までなので、長い文は段落ごとに分けて訳す
     if (provider === 'claude') return await claude(src, from, to);
-    const parts = src.length > 450 ? src.split(/(?<=[。．！？\n])/).reduce((acc, s) => {
+    const input = from === 'ja' && to === 'en' ? applyGlossary(src) : src;
+    const parts = input.length > 450 ? input.split(/(?<=[。．！？\n])/).reduce((acc, s) => {
       if (!acc.length || (acc.at(-1) + s).length > 450) acc.push(s); else acc[acc.length - 1] += s;
       return acc;
-    }, []) : [src];
+    }, []) : [input];
     const out = [];
     for (const p of parts) out.push(p.trim() ? await mymemory(p.trim(), from, to) : p);
     return out.join(' ').trim();

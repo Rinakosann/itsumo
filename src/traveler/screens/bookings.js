@@ -2,9 +2,10 @@
 import { esc, toast } from '../../common/ui.js';
 import { get, post } from '../../common/api.js';
 import { googleMapsLink } from '../../common/maps.js';
-import { loadRates } from '../state.js';
+import { loadRates, state } from '../state.js';
+import { AVATAR } from '../../common/character-art.js';
 import { t, errText } from '../strings.js';
-import { price, rateNote, label } from '../components.js';
+import { price, rateNote, label, tipsHtml, phrasesHtml } from '../components.js';
 import { DIETARY, CANCEL_REASONS } from '../../../shared/constants.js';
 
 const fmtDate = (d) => new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`));
@@ -36,7 +37,8 @@ export async function renderOne(view, id) {
   view.innerHTML = `
     <section>
       <a class="back" href="#/bookings">← ${t('bookingsTitle')}</a>
-      ${b.status === 'confirmed' ? `<div class="celebrate">🎉</div><h2>${t('confirmed')}</h2>` : `<h2>${esc(s.name.text)}</h2>`}
+      ${b.status === 'confirmed' ? `<div class="celebrate">🎉</div><h2>${t('confirmed')}</h2>
+        <div class="greet"><div class="char-avatar">${AVATAR}</div><p>${esc(t('keroConfirmed'))}</p></div>` : `<h2>${esc(s.name.text)}</h2>`}
       <div class="tags">${badge(b.status)}</div>
       ${b.status === 'cancelled_business' ? `<p class="notice warn">${esc(t('shopCancelReason', { r: [label(CANCEL_REASONS, b.cancelReason), b.cancelNote?.text].filter(Boolean).join(' — ') }))}</p>` : ''}
       <div class="section kv">
@@ -49,6 +51,7 @@ export async function renderOne(view, id) {
         ${b.dietary.length ? `<div class="wide"><b>${t('dietary')}</b>${b.dietary.map((d) => esc(label(DIETARY, d))).join(', ')}</div>` : ''}
       </div>
       ${rateNote()}
+      ${['confirmed', 'completed'].includes(b.status) ? `${tipsHtml(s)}${phrasesHtml(state.user?.name)}` : ''}
       <a class="btn block" href="${esc(googleMapsLink({ name: s.name.ja, lat: s.lat, lng: s.lng, placeId: s.placeId, address: s.address }))}" target="_blank" rel="noopener">🧭 ${t('openInMaps')}</a>
       <a class="btn block" href="${b.threadId ? `#/chat/${b.threadId}` : `#/chat/new?shop=${s.id}`}">💬 ${t('openChat')}</a>
       ${b.status === 'confirmed' ? `<button class="btn block danger" data-cancel>${t('cancel')}</button>` : ''}

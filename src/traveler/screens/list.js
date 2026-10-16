@@ -18,6 +18,7 @@ const FILTERS = [
   { key: 'customers', label: 'fCustomers', options: CUSTOMERS.map((c) => [c.id, c.en]) },
   { key: 'years', label: 'fYears', options: YEARS.map((y) => [y.id, y.en]) },
   { key: 'distance', label: 'fDistance', options: DISTANCES.map((d) => [String(d), t('withinKm', { n: d })]) },
+  { key: 'guidebook', label: 'fGuidebook', options: [['no', t('onlyNotInGuidebooks')]] },
 ];
 
 function matches(s, f) {
@@ -30,6 +31,7 @@ function matches(s, f) {
   if (f.customers && s.customers !== f.customers) return false;
   if (f.years && s.years !== f.years) return false;
   if (f.distance && s.stationKm > Number(f.distance)) return false;
+  if (f.guidebook === 'no' && !s.notInGuidebooks) return false;
   return true;
 }
 

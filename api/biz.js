@@ -1,10 +1,11 @@
 // /api/biz?action=...  事業者画面（店舗登録・受付停止日・予約一覧・キャンセル・新着の数）
 import { api, bad, notFound, str, oneOf, isDate } from '../server/http.js';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../server/db.js';
 import { requireUser } from '../server/auth.js';
 import { jaToEn } from '../server/translate.js';
 import { isPast } from '../shared/booking.js';
-import { AREAS, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, CANCEL_REASONS, LIMITS } from '../shared/constants.js';
+import { AREAS, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, CANCEL_REASONS, LIMITS, TIPS } from '../shared/constants.js';
 import { todayJST, addDays } from '../shared/time.js';
 
 const biz = (ctx) => requireUser(ctx, 'business');
@@ -57,6 +58,12 @@ function readShop(b) {
       slots: uniqueSlots,
       closedDays: (Array.isArray(b.closedDays) ? b.closedDays : []).map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6),
       cutoff: opt(b.cutoff, CUTOFFS) ?? 'same_day',
+      // こだわり（任意）
+      localsOrderJa: str(b.localsOrder, { max: 100 }),
+      notInGuidebooks: Boolean(b.notInGuidebooks),
+      welcomeJa: str(b.welcome, { max: 100 }),
+      tips: (Array.isArray(b.tips) ? b.tips : []).filter((x) => ids(TIPS).includes(x)),
+      tipsNoteJa: str(b.tipsNote, { max: 200 }),
     },
   };
 }
@@ -98,6 +105,8 @@ export default api({
     const name = keep(prev?.name, v.nameJa) ?? (v.nameJa ? await jaToEn(v.nameJa) : { ja: '' });
     const description = keep(prev?.description, v.descriptionJa) ?? (v.descriptionJa ? await jaToEn(v.descriptionJa) : { ja: '' });
     const bring = v.bringJa ? keep(prev?.extra?.bring, v.bringJa) ?? (await jaToEn(v.bringJa)) : null;
+    const tr = async (field, ja) => (ja ? keep(prev?.[field], ja) ?? (await jaToEn(ja)) : null);
+    const [localsOrder, welcome, tipsNote] = await Promise.all([tr('localsOrder', v.localsOrderJa), tr('welcome', v.welcomeJa), tr('tipsNote', v.tipsNoteJa)]);
     const publish = wantPublish && missing.length === 0;
 
     const data = {
@@ -109,13 +118,14 @@ export default api({
         ? { dietary: v.dietary, allergyOk: v.allergyOk, menuStyle: v.menuStyle }
         : { bring, minPeople: v.minPeople },
       slots: v.slots, closedDays: v.closedDays, cutoff: v.cutoff,
+      localsOrder: localsOrder ?? Prisma.DbNull, notInGuidebooks: v.notInGuidebooks, welcome: welcome ?? Prisma.DbNull, tips: v.tips, tipsNote: tipsNote ?? Prisma.DbNull,
       status: publish ? 'published' : prev?.status === 'hidden' ? 'hidden' : 'draft',
       ...(publish && !prev?.publishedAt ? { publishedAt: new Date() } : {}),
     };
     const saved = prev
       ? await prisma.shop.update({ where: { id: prev.id }, data })
       : await prisma.shop.create({ data: { ...data, ownerId: user.id } });
-    const translateFailed = [name, description, bring].some((o) => o && o.ja && !o.en);
+    const translateFailed = [name, description, bring, localsOrder, welcome, tipsNote].some((o) => o && o.ja && !o.en);
     return { id: saved.id, status: saved.status, missing: wantPublish ? missing : [], translateFailed };
   },
 

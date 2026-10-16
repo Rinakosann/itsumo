@@ -77,6 +77,12 @@ model Shop {
   customers   String // local | mixed | tourist
   years       String // <10 | 10-30 | 30+
   stationKm   Float // 主要駅からの距離（事業者の申告・道のりの目安）
+  // ---- こだわり：点数ではなく事実で伝える／断られる不安をなくす ----
+  localsOrder     Json? // 地元の人がいつも頼むもの・すること { ja, en }
+  notInGuidebooks Boolean  @default(false) // ガイドブック・旅行サイトに載っていない
+  welcome         Json? // 店主からのひとこと { ja, en }
+  tips            String[] @default([]) // 来る前に知ってほしいこと（選択式）
+  tipsNote        Json? // 来る前に知ってほしいこと（自由記述）{ ja, en }
   extra       Json? // 体験：bring{ja,en} minPeople ／ 飲食店：dietary[] menuStyle
   slots       Json // [{ time: "10:00", capacity: 6 }]
   closedDays  Int[]     @default([]) // 定休日（0=日〜6=土）
