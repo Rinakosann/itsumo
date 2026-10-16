@@ -1,0 +1,35 @@
+{
+  "name": "tabi-local-mvp",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "prisma generate && node scripts/prepare-db.js && vite build",
+    "preview": "vite preview",
+    "postinstall": "prisma generate",
+    "db:local": "node scripts/local-db.js",
+    "db:push": "dotenv -e .env.local -- prisma db push",
+    "db:prepare": "dotenv -e .env.local -- node scripts/prepare-db.js",
+    "db:studio": "dotenv -e .env.local -- prisma studio"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "@prisma/client": "^6.19.3",
+    "prisma": "^6.19.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
+    "@electric-sql/pglite-socket": "^0.2.13",
+    "@types/google.maps": "^3.66.7",
+    "dotenv-cli": "^11.0.0",
+    "vercel": "^64.3.1",
+    "vite": "^8.3.4"
+  }
+}

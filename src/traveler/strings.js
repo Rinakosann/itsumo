@@ -1,0 +1,58 @@
+// 旅行者画面の文言（英語のみ。簡体字は次フェーズ。言語を足すときはこの形のオブジェクトを増やす）
+export const T = {
+  navExplore: 'Explore', navBookings: 'My bookings', navChats: 'Messages', navAccount: 'Account',
+  greet: "Hi, I'm Kero! 🐸 These are small local shops. Chat in English — they'll read it in Japanese.",
+  chooseCurrency: 'Show prices also in', currencyNote: 'Prices are paid in Japanese yen at the shop. The other currency is an estimate.',
+  noShops: 'No shops yet. Please check back soon!', noMatch: 'No shops match all filters.', removeFilter: 'Remove “{f}” → {n} shops',
+  shopsCount: '{n} shops', newest: 'Newest first',
+  fCategory: 'Category', fArea: 'Area', fBudget: 'Budget', fCustomers: 'Customers', fYears: 'Years in business', fDistance: 'From main station', any: 'Any',
+  withinKm: 'Within {n} km', fromStation: 'About {km} km from {station}',
+  listView: 'List', mapView: 'Map', searchPlace: 'Search a place on the map', mapOff: 'The map is not available right now.',
+  perPerson: '/ person', payAtShop: 'Pay at the shop in yen', approx: 'approx.',
+  rateNote: 'Exchange rate as of {date} — estimate only', rateStale: 'Latest rate unavailable. Using the rate from {date} — estimate only',
+  duration: 'Duration', minutes: '{n} min', capacity: 'Group size', upTo: 'Up to {n} people', payment: 'Payment', address: 'Address',
+  bring: 'What to bring', minPeople: 'Minimum {n} people', dietarySupport: 'Dietary options', menuStyle: 'Menu',
+  allergyOk: 'Can respond to allergies (please tell them in your message)',
+  customers: 'Customers', years: 'Years in business',
+  externalLink: 'Website / Instagram', leaving: 'Opens an external site in a new tab',
+  openInMaps: 'Open in Google Maps', chat: 'Ask a question (chat)', book: 'Book', noSlots: 'This shop does not take online bookings yet. You can ask them in chat.',
+  translated: 'Translated from Japanese', showOriginal: 'Show original', notTranslated: 'Could not translate — showing the original.',
+  report: 'Report this shop', reportPrompt: 'What is wrong with this shop page?', reportThanks: 'Thank you. Our team will check it.',
+  loginTitle: 'Log in', registerTitle: 'Create an account', name: 'Your name (shown to the shop)', email: 'Email', password: 'Password',
+  passwordHint: 'At least 8 characters', agree: 'I agree to the {terms} and {privacy}', terms: 'Terms of Use', privacy: 'Privacy Policy',
+  login: 'Log in', register: 'Create account', haveAccount: 'Already have an account? Log in', noAccount: 'New here? Create an account',
+  forgot: 'Forgot password?', forgotTitle: 'Reset your password', sendLink: 'Send reset link', sent: 'If this email is registered, we sent a reset link. Check your inbox.',
+  newPassword: 'New password', save: 'Save', needLogin: 'Please log in or create an account to continue.',
+  bookTitle: 'Book', stepDate: '1. Date', stepTime: '2. Time', stepPeople: '3. People', stepDetails: '4. Details', stepReview: '5. Review',
+  pickDate: 'Choose a date', pickTime: 'Choose a time', full: 'Full', left: '{n} left', people: 'People', dietary: 'Dietary needs (optional)',
+  message: 'Message to the shop (optional)', messageHint: 'Write in English — we translate it into Japanese.', charsLeft: '{n} characters left',
+  review: 'Review', confirm: 'Confirm booking', missing: 'Please choose: {list}', draftRestored: 'We restored your unfinished booking.',
+  confirmed: 'Booking confirmed!', when: 'When', payAmount: 'Pay at the shop', closedDay: 'Closed', back: 'Back',
+  bookingsTitle: 'My bookings', noBookings: 'No bookings yet.', cancel: 'Cancel booking', cancelConfirm: 'Cancel this booking? (free)', cancelled: 'Cancelled',
+  st_confirmed: 'Confirmed', st_completed: 'Completed', st_cancelled_traveler: 'You cancelled', st_cancelled_business: 'Cancelled by the shop',
+  shopCancelReason: 'Reason from the shop: {r}', openChat: 'Chat with the shop',
+  chatsTitle: 'Messages', noChats: 'No messages yet.', writeMessage: 'Write in English…', send: 'Send', blocked: 'You cannot send messages to this shop.',
+  accountTitle: 'Account', currency: 'Currency', logout: 'Log out', deleteAccount: 'Delete account',
+  deleteConfirm: 'Enter your password to delete your account. This cannot be undone.', deleted: 'Your account was deleted.',
+  contact: 'Contact', loading: 'Loading…', retry: 'Try again',
+  err_offline: 'Cannot connect. Please check your internet connection and try again.',
+  err_server_error: 'Something went wrong on our side. Please try again in a moment.',
+  err_email_taken: 'This email is already registered. Please log in.', err_wrong_login: 'Email or password is incorrect.',
+  err_locked: 'Too many failed attempts. Please wait 15 minutes, or reset your password.', err_wrong_role: 'This is a shop account. Please use the shop page.',
+  err_weak_password: 'Password must be at least 8 characters.', err_invalid_email: 'Please enter a valid email.',
+  err_terms_required: 'Please agree to the Terms of Use and Privacy Policy.', err_invalid_token: 'This link has expired or was already used. Please request a new one.',
+  err_full: 'Sorry, this time slot just became full. Please choose another time.', err_not_enough_seats: 'Not enough space for that many people. Please choose fewer people or another time.',
+  err_date_closed: 'This date or time can no longer be booked.', err_too_many_bookings: 'You already have 5 upcoming bookings. Please cancel one to book more.',
+  err_min_people: 'This shop needs more people for a booking.', err_blocked: 'You cannot send messages to this shop.',
+  err_cannot_cancel: 'This booking can no longer be cancelled.', err_has_future_bookings: 'Please cancel your upcoming bookings first.',
+  err_wrong_password: 'Password is incorrect.', err_rate_limited: 'Too many requests. Please wait a minute.', err_login_required: 'Please log in again.',
+  err_not_found: 'This page was not found. The shop may have been unpublished.',
+};
+
+export function t(key, vars) {
+  let s = T[key] ?? key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, v);
+  return s;
+}
+
+export const errText = (e) => T[`err_${e?.code}`] ?? T.err_server_error;

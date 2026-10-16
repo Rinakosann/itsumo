@@ -1,0 +1,183 @@
+// ============================================================
+//  データベース設計（仕様書：MVP縮小版）
+//  変更したら: npm run db:push（本番はデプロイ時に自動で反映）
+//  翻訳される文は Json で { ja, en }。en がないときは翻訳に失敗している。
+// ============================================================
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+// ---------- アカウント（旅行者・事業者とも メール＋パスワード）----------
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String
+  role           String // traveler | business
+  name           String
+  currency       String    @default("USD")
+  termsAgreedAt  DateTime
+  failedLogins   Int       @default(0)
+  lockedUntil    DateTime?
+  deletedAt      DateTime? // 退会（メールは別の値に置き換え、同じメールで登録し直せる）
+  createdAt      DateTime  @default(now())
+
+  sessions  Session[]
+  resets    PasswordReset[]
+  shops     Shop[]
+  bookings  Booking[]
+  threads   Thread[]
+  reports   Report[]
+}
+
+model Session {
+  id        String   @id // トークンのSHA-256
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model PasswordReset {
+  id        String    @id // トークンのSHA-256（1回だけ・期限付き）
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+// ---------- 店舗 ----------
+
+model Shop {
+  id          String    @id @default(cuid())
+  ownerId     String
+  owner       User      @relation(fields: [ownerId], references: [id])
+  status      String    @default("draft") // draft | published | hidden（運営が非公開）
+  category    String // experience | restaurant
+  area        String // uji | kyoto | osaka | nara
+  name        Json // { ja, en }
+  address     String
+  lat         Float?
+  lng         Float?
+  placeId     String? // Googleマップの場所ID（実在のお店と紐づける）
+  description Json // { ja, en }
+  priceJPY    Int
+  durationMin Int
+  payment     String // cash | card
+  link        String? // HP か Instagram（http/https のみ）
+  customers   String // local | mixed | tourist
+  years       String // <10 | 10-30 | 30+
+  stationKm   Float // 主要駅からの距離（事業者の申告・道のりの目安）
+  extra       Json? // 体験：bring{ja,en} minPeople ／ 飲食店：dietary[] menuStyle
+  slots       Json // [{ time: "10:00", capacity: 6 }]
+  closedDays  Int[]     @default([]) // 定休日（0=日〜6=土）
+  cutoff      String    @default("same_day") // same_day | day_before | two_days
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  blocked  BlockedDate[]
+  bookings Booking[]
+  threads  Thread[]
+  views    ShopView[]
+  reports  Report[]
+}
+
+model BlockedDate {
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  date   String // YYYY-MM-DD
+
+  @@id([shopId, date])
+}
+
+// ---------- 予約（枠の上限人数内なら即時確定）----------
+
+model Booking {
+  id            String    @id @default(cuid())
+  shopId        String
+  shop          Shop      @relation(fields: [shopId], references: [id])
+  travelerId    String
+  traveler      User      @relation(fields: [travelerId], references: [id])
+  date          String
+  time          String
+  people        Int
+  dietary       String[]  @default([])
+  message       Json? // { en, ja }
+  status        String    @default("confirmed") // confirmed | cancelled_traveler | cancelled_business（完了は日時で判定）
+  cancelReason  String? // closed | weather | other（事業者キャンセル）
+  cancelNote    Json? // { ja, en }
+  seenByBusiness Boolean  @default(false)
+  seenCancelByBusiness Boolean @default(true)
+  createdAt     DateTime  @default(now())
+  cancelledAt   DateTime?
+
+  @@index([shopId, date, time])
+}
+
+// ---------- チャット（翻訳つき）----------
+
+model Thread {
+  id                String    @id @default(cuid())
+  shopId            String
+  shop              Shop      @relation(fields: [shopId], references: [id])
+  travelerId        String
+  traveler          User      @relation(fields: [travelerId], references: [id])
+  blockedByBusiness Boolean   @default(false)
+  updatedAt         DateTime  @default(now())
+  messages          Message[]
+
+  @@unique([shopId, travelerId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  threadId       String
+  thread         Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender         String // traveler | business
+  text           String // 原文
+  translated     String? // 相手の言語への翻訳（失敗したら null）
+  readByTraveler Boolean  @default(false)
+  readByBusiness Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+// ---------- 運営用（画面はなし。DBで確認）----------
+
+model Report {
+  id         String   @id @default(cuid())
+  shopId     String
+  shop       Shop     @relation(fields: [shopId], references: [id])
+  reporterId String?
+  reporter   User?    @relation(fields: [reporterId], references: [id])
+  reason     String
+  createdAt  DateTime @default(now())
+}
+
+// 成功指標：詳細ページの閲覧（1回ごと）
+model ShopView {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  visitorId String? // ブラウザごとのランダムID（個人は特定しない）
+  createdAt DateTime @default(now())
+
+  @@index([shopId, createdAt])
+}
+
+// 為替レート（1日1回取得）
+model Rate {
+  day       String   @id // YYYY-MM-DD
+  base      String   @default("JPY")
+  rates     Json
+  fetchedAt DateTime @default(now())
+}
