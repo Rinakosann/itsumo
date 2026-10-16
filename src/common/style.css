@@ -408,3 +408,30 @@ gmp-place-autocomplete { width: 100%; }
 .phrase .en { font-size: 12px; color: var(--muted); }
 .owner-says .owner-text { font-style: italic; }
 details.section > summary { font-weight: 700; cursor: pointer; }
+
+/* 事業者画面：60代のご夫婦でも読みやすく（文字・ボタンを大きめに） */
+body.business { font-size: 17px; }
+body.business .btn { font-size: 16px; padding: 13px 16px; }
+body.business .form input:not([type=checkbox]):not([type=radio]), body.business .form select, body.business .form textarea { font-size: 16px; padding: 12px; }
+body.business .big-btn { font-size: 18px; padding: 16px; }
+.flow { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin: 12px 0; }
+.flow summary { font-weight: 700; cursor: pointer; }
+.flow-steps { padding-left: 0; list-style: none; counter-reset: s; margin: 10px 0 0; display: grid; gap: 10px; }
+.flow-steps li { counter-increment: s; display: grid; grid-template-columns: 32px 1fr; gap: 2px 10px; }
+.flow-steps li::before { content: counter(s); grid-row: span 2; width: 28px; height: 28px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.flow-steps b { font-size: 16px; }
+.flow-steps span { font-size: 14px; color: var(--muted); }
+
+/* はじめて開いたときのケロの案内（ゲームの会話風） */
+.intro { position: fixed; inset: 0; z-index: 3000; background: linear-gradient(180deg, #e8f4e6 0%, #f7f5f0 60%); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+.intro-skip { position: absolute; top: 14px; right: 14px; border: 0; background: none; color: var(--muted); text-decoration: underline; font-size: 14px; }
+.intro-chara { width: min(240px, 60vw); margin-bottom: auto; margin-top: 12vh; animation: hop 2.4s ease-in-out infinite; }
+.intro-chara svg { width: 100%; height: auto; display: block; }
+.intro-box { position: relative; width: min(560px, 100%); background: var(--card); border: 3px solid var(--brand); border-radius: 18px; padding: 22px 16px 14px; box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+.intro-name { position: absolute; top: -14px; left: 16px; background: var(--brand); color: #fff; font-weight: 800; padding: 3px 14px; border-radius: 999px; font-size: 14px; }
+.intro-box p { margin: 0 0 12px; font-size: 16px; line-height: 1.7; }
+.intro-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 10px; }
+.intro-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.intro-dots span.on { background: var(--brand); }
+@keyframes hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .intro-chara { animation: none; } }

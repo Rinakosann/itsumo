@@ -55,7 +55,7 @@ export async function render(view, id) {
 
       <div class="section">
         <h4>📍 ${t('address')}</h4>
-        <p>${esc(s.address)}</p>
+        <p>${esc(s.address)} ${s.addressVerified ? `<span class="fact">✅ ${t('addressVerified')}</span>` : ''}</p>
         ${mapsEnabled() && s.lat != null ? '<div id="shop-map" class="map small"></div>' : ''}
         <a class="btn block" href="${esc(googleMapsLink({ name: s.name.ja, lat: s.lat, lng: s.lng, placeId: s.placeId, address: s.address }))}" target="_blank" rel="noopener">🧭 ${t('openInMaps')}</a>
         ${s.link ? `<a class="btn block" href="${esc(s.link)}" target="_blank" rel="noopener noreferrer nofollow">🔗 ${t('externalLink')} ↗</a><p class="warn-ext">${t('leaving')}: ${esc(s.link)}</p>` : ''}

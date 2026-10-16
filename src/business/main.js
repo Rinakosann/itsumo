@@ -17,7 +17,9 @@ const AUTH_ERR = {
   email_taken: 'このメールアドレスはすでに登録されています。ログインしてください。', wrong_login: 'メールアドレスかパスワードが違います。',
   locked: 'ログインの失敗が続いたため、15分間ログインできません。パスワードの再設定もできます。', wrong_role: 'このメールアドレスは旅行者として登録されています。',
   weak_password: 'パスワードは8文字以上にしてください。', invalid_email: 'メールアドレスを確認してください。', terms_required: '利用規約とプライバシーポリシーへの同意が必要です。',
-  invalid_token: 'このリンクは期限切れか、すでに使われています。もう一度再設定を申し込んでください。', rate_limited: 'アクセスが集中しています。1分ほど待ってからお試しください。',
+  invalid_token: 'このリンクは期限切れか、すでに使われています。もう一度再設定を申し込んでください。',
+  invalid_kana: 'フリガナはカタカナで入力してください。', invalid_phone: '電話番号を確認してください（0から始まる10〜11桁。フリーダイヤルは使えません）。',
+  missing: '入力されていない項目があります。', rate_limited: 'アクセスが集中しています。1分ほど待ってからお試しください。',
 };
 const authErr = (e) => AUTH_ERR[e?.code] ?? errJa(e);
 
@@ -29,7 +31,9 @@ function renderAuth(mode) {
   if (mode === 'register') {
     box(`<h2>事業者の登録</h2>
       <form class="form" id="f" novalidate>
-        <label>お名前（お客様に表示されることはありません）<input name="name" maxlength="60" required /></label>
+        <label>お名前（店主・担当の方）<input name="name" maxlength="60" required placeholder="例：山田 花子" /></label>
+        <label>フリガナ<input name="nameKana" maxlength="60" required placeholder="例：ヤマダ ハナコ" /></label>
+        <label>電話番号（運営からの連絡用・お客様には表示しません）<input name="phone" type="tel" inputmode="tel" maxlength="15" required placeholder="例：0774-12-3456" /></label>
         <label>メールアドレス<input name="email" type="email" autocomplete="email" required /></label>
         <label>パスワード（8文字以上）<input name="password" type="password" autocomplete="new-password" minlength="8" required /></label>
         <label class="check"><input type="checkbox" name="agree" /> <span><a href="#/terms" target="_blank">利用規約</a>と<a href="#/privacy" target="_blank">プライバシーポリシー</a>に同意する</span></label>
@@ -42,13 +46,26 @@ function renderAuth(mode) {
     box(`<h2>新しいパスワード</h2><form class="form" id="f"><label>パスワード（8文字以上）<input name="password" type="password" minlength="8" required /></label>
       <p class="error" id="err" role="alert"></p><button class="btn primary block" type="submit">保存</button></form>`);
   } else {
-    box(`<h2>事業者ログイン</h2>
+    box(`<h2>Tabi Local 事業者</h2>
+      <p>海外からのお客様の予約を、<b>日本語だけ</b>で受けられます。言葉のやり取りは自動で翻訳します。</p>
+      <details class="flow" ${localStorage.getItem('tlm.biz.seen') ? '' : 'open'}><summary>はじめての方へ：予約を受けるまでの流れ</summary>
+        <ol class="flow-steps">
+          <li><b>登録する</b><span>お名前・電話番号・メールアドレスとパスワードを入れます。ご家族で同じアカウントを使えます。</span></li>
+          <li><b>お店を登録する</b><span>Googleマップでお店の名前を検索するか、郵便番号から住所を入れます。住所は実在するか確かめます。</span></li>
+          <li><b>日本語で紹介を書く</b><span>「地元の人がいつも頼むもの」や「店主からのひとこと」を書くと、英語に自動で翻訳されて公開されます。</span></li>
+          <li><b>受け入れる時間と人数を決める</b><span>時間枠ごとの上限人数の範囲で、予約はすぐに確定します。休みの日は「受付停止」で止められます。</span></li>
+          <li><b>予約とチャットが届く</b><span>お客様の英語は日本語に訳して表示し、日本語で返信すれば英語に訳して届けます。</span></li>
+          <li><b>当日</b><span>お客様が来店し、代金はいつもどおり現地で受け取ります（アプリでの支払いはありません）。</span></li>
+        </ol></details>
+      <a class="btn primary block big-btn" href="#/register">はじめての方：登録する</a>
+      <h3 style="margin-top:20px">登録済みの方：ログイン</h3>
       <form class="form" id="f" novalidate>
         <label>メールアドレス<input name="email" type="email" autocomplete="email" required /></label>
         <label>パスワード<input name="password" type="password" autocomplete="current-password" required /></label>
         <p class="error" id="err" role="alert"></p><button class="btn primary block" type="submit">ログイン</button>
       </form>
-      <a class="btn block" href="#/register">はじめての方：登録する</a><a class="btn block" href="#/forgot">パスワードを忘れた方</a>`);
+      <a class="btn block" href="#/forgot">パスワードを忘れた方</a>`);
+    try { localStorage.setItem('tlm.biz.seen', '1'); } catch { /* ignore */ }
   }
   const f = $('#f');
   f.onsubmit = async (e) => {
@@ -59,7 +76,7 @@ function renderAuth(mode) {
     try {
       if (mode === 'register') {
         if (!f.agree.checked) throw Object.assign(new Error(), { code: 'terms_required' });
-        await post('auth', 'register', { role: 'business', name: f.name.value, email: f.email.value, password: f.password.value, termsAgreed: true });
+        await post('auth', 'register', { role: 'business', name: f.name.value, nameKana: f.nameKana.value, phone: f.phone.value, email: f.email.value, password: f.password.value, termsAgreed: true });
         location.hash = '#/shop/new';
       } else if (mode === 'forgot') {
         await post('auth', 'forgot', { email: f.email.value }).catch(() => {});

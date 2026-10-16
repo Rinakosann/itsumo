@@ -26,10 +26,19 @@ export default api({
     if (!isEmail(email)) throw bad('invalid_email');
     const name = str(ctx.body.name, { max: 60, required: true, name: 'name' });
     if (!ctx.body.termsAgreed) throw bad('terms_required');
+    // 事業者は、フリガナと電話番号（運営からの連絡用・公開しない）も必須
+    let nameKana = null;
+    let phone = null;
+    if (role === 'business') {
+      nameKana = str(ctx.body.nameKana, { max: 60, required: true, name: 'nameKana' });
+      if (!/^[ァ-ヶー\s　]+$/.test(nameKana)) throw bad('invalid_kana');
+      phone = String(ctx.body.phone ?? '').replace(/[^0-9]/g, '');
+      if (!/^0\d{9,10}$/.test(phone) || /^0(120|800)/.test(phone)) throw bad('invalid_phone');
+    }
     if (await prisma.user.findUnique({ where: { email } })) throw bad('email_taken');
     const user = await prisma.user.create({
       data: {
-        email, name, role, passwordHash: await hashPassword(password(ctx.body.password)), termsAgreedAt: new Date(),
+        email, name, role, nameKana, phone, passwordHash: await hashPassword(password(ctx.body.password)), termsAgreedAt: new Date(),
         currency: CURRENCIES.includes(ctx.body.currency) ? ctx.body.currency : 'USD',
       },
     });

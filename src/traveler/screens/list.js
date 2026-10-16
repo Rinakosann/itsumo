@@ -3,9 +3,9 @@
 //  一覧／地図の切り替え。地図では実在の場所を検索して移動できる。
 //  初回は表示通貨を選ぶ。キャラクターが上で一言（×で閉じられる）。
 // ============================================================
-import { esc, openSheet, closeSheet, store } from '../../common/ui.js';
+import { esc, openSheet, closeSheet, store, storage } from '../../common/ui.js';
 import { makeMap, placeSearch, mapsEnabled } from '../../common/maps.js';
-import { AVATAR } from '../../common/character-art.js';
+import { AVATAR, FULL } from '../../common/character-art.js';
 import { state, saveFilters, setCurrency, guessedCurrency, loadShops, loadRates } from '../state.js';
 import { t } from '../strings.js';
 import { shopCard, rateNote, label } from '../components.js';
@@ -33,6 +33,35 @@ function matches(s, f) {
   if (f.distance && s.stationKm > Number(f.distance)) return false;
   if (f.guidebook === 'no' && !s.notInGuidebooks) return false;
   return true;
+}
+
+/** はじめて開いたとき：ケロがゲームの会話のように案内する（スキップできる）。最後に表示通貨を選ぶ */
+function keroIntro(after) {
+  const lines = ['intro1', 'intro2', 'intro3', 'intro4', 'intro5'];
+  let i = 0;
+  const el = document.createElement('div');
+  el.className = 'intro';
+  document.body.append(el);
+  const finish = (cur) => { setCurrency(cur ?? guessedCurrency()); store('tlm.introDone', true); el.remove(); after(); };
+  const draw = () => {
+    const last = i === lines.length - 1;
+    el.innerHTML = `
+      <button class="intro-skip" data-skip>${t('introSkip')}</button>
+      <div class="intro-chara">${FULL}</div>
+      <div class="intro-box" role="dialog" aria-live="polite">
+        <span class="intro-name">Kero</span>
+        <p>${esc(t(lines[i]))}</p>
+        ${last ? `<div class="choices">${CURRENCIES.map((c) => `<button class="choice ${c === guessedCurrency() ? 'on' : ''}" data-cur="${c}">${c}</button>`).join('')}</div>`
+          : `<div class="intro-dots">${lines.map((_, j) => `<span class="${j === i ? 'on' : ''}"></span>`).join('')}</div><button class="btn primary block" data-next>${t('introNext')}</button>`}
+      </div>`;
+  };
+  el.onclick = (e) => {
+    if (e.target.closest('[data-skip]')) return finish();
+    const c = e.target.closest('[data-cur]')?.dataset.cur;
+    if (c) return finish(c);
+    if (e.target.closest('[data-next]')) { i++; draw(); }
+  };
+  draw();
 }
 
 function askCurrency(after) {
@@ -109,5 +138,8 @@ export async function render(view) {
     if (r) { f[r] = ''; saveFilters(); render(view); }
   };
 
-  if (!state.currency) askCurrency(() => render(view));
+  if (!state.currency) {
+    if (!storage('tlm.introDone', false)) keroIntro(() => render(view));
+    else askCurrency(() => render(view));
+  }
 }

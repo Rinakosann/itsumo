@@ -31,7 +31,7 @@ export async function renderEdit(view, id) {
   const x = s.extra ?? {};
   let currentId = id === 'new' ? null : id;
   const opt = (list, cur, key = 'ja') => list.map((o) => `<option value="${o.id}" ${o.id === cur ? 'selected' : ''}>${esc(o[key])}</option>`).join('');
-  const pos = { lat: s.lat ?? null, lng: s.lng ?? null, placeId: s.placeId ?? null };
+  const pos = { lat: s.lat ?? null, lng: s.lng ?? null, placeId: s.placeId ?? null, verified: Boolean(s.addressVerified) };
 
   const slotRow = (sl = { time: '', capacity: 4 }) => `
     <div class="slot-row"><label class="label">開始時刻<input type="time" name="slotTime" value="${esc(sl.time)}" step="900" /></label>
@@ -55,7 +55,13 @@ export async function renderEdit(view, id) {
           <label>カテゴリ＊<select name="category">${opt(CATEGORIES, s.category)}</select></label>
           <label>エリア＊<select name="area"><option value="">選ぶ</option>${AREAS.map((a) => `<option value="${a.id}" ${a.id === s.area ? 'selected' : ''}>${a.ja}（主要駅：${a.stationJa}）</option>`).join('')}</select></label>
         </div>
-        <label>住所＊<input name="address" maxlength="200" value="${esc(s.address)}" /></label>
+        <div class="form-row">
+          <label>郵便番号<input name="postal" inputmode="numeric" maxlength="8" placeholder="611-0021" value="${esc(s.postal ?? '')}" /></label>
+          <label>&nbsp;<button type="button" class="btn" data-zip>郵便番号から住所を入れる</button></label>
+        </div>
+        <label>住所＊<input name="address" maxlength="200" value="${esc(s.address)}" placeholder="都道府県から番地まで" /></label>
+        <div class="row-between"><button type="button" class="btn" data-verify>📍 住所を確認する</button><span id="verified" class="small">${s.addressVerified ? '✅ 実在する住所を確認しました' : '<span class="muted">未確認（公開には確認が必要です）</span>'}</span></div>
+        <p class="muted small">国土地理院の住所検索で、住所が実在するかを確かめます。確認できると地図の位置と駅からの距離も入ります。</p>
         <label>説明文＊<textarea name="description" maxlength="${LIMITS.descriptionMaxChars}" rows="5" placeholder="どんなお店・体験か、旅行者に伝えたいこと">${esc(s.description?.ja)}</textarea></label>
         <div class="form-row">
           <label>料金（1人・円）＊<input name="priceJPY" type="number" min="0" step="100" value="${s.priceJPY ?? ''}" /></label>
@@ -118,6 +124,13 @@ export async function renderEdit(view, id) {
   showCat();
   f.category.onchange = showCat;
 
+  // いちばん近い主要駅のエリアを選び、直線距離を参考値として入れる
+  const suggestStation = (p) => {
+    const nearest = AREAS.map((a) => ({ a, km: distanceKm(a, p) })).sort((u, v) => u.km - v.km)[0];
+    if (!f.area.value && nearest.km < 30) f.area.value = nearest.a.id;
+    const area = AREAS.find((a) => a.id === f.area.value);
+    if (area) { const km = Math.round(distanceKm(area, p) * 10) / 10; if (!f.stationKm.value) f.stationKm.value = km; $('#km-hint').textContent = `${area.stationJa}からの直線距離は 約${km}km です。道のりに合わせて直してください。`; }
+  };
   let map = null;
   const drawMap = () => {
     if (!mapsEnabled() || pos.lat == null) return;
@@ -127,23 +140,33 @@ export async function renderEdit(view, id) {
   drawMap();
   if (mapsEnabled()) {
     placeSearch($('#place'), (p) => {
-      pos.lat = p.lat; pos.lng = p.lng; pos.placeId = p.placeId;
+      pos.lat = p.lat; pos.lng = p.lng; pos.placeId = p.placeId; pos.verified = p.lat != null;
+      $('#verified').innerHTML = '✅ Googleマップで実在を確認しました';
       if (p.name) f.name.value = p.name;
       if (p.address) f.address.value = p.address.replace(/^日本、?\s*/, '');
       if (p.website && !f.link.value) f.link.value = p.website;
-      // いちばん近い主要駅のエリアを選び、直線距離を参考値として入れる
-      if (p.lat != null) {
-        const nearest = AREAS.map((a) => ({ a, km: distanceKm(a, p) })).sort((u, v) => u.km - v.km)[0];
-        if (!f.area.value && nearest.km < 30) f.area.value = nearest.a.id;
-        const area = AREAS.find((a) => a.id === f.area.value);
-        if (area) { const km = Math.round(distanceKm(area, p) * 10) / 10; f.stationKm.value = km; $('#km-hint').textContent = `${area.stationJa}からの直線距離 約${km}km を入れました。道のりに合わせて直してください。`; }
-      }
+      if (p.lat != null) suggestStation(p);
       drawMap();
       toast('Googleマップの情報を入れました');
     }, { language: 'ja', placeholder: 'お店の名前で検索（例：中村藤吉 本店）' }).catch(() => {});
   }
 
+  f.address.addEventListener('input', () => { pos.verified = false; $('#verified').innerHTML = '<span class="muted">住所が変わりました。もう一度確認してください</span>'; });
   view.onclick = async (e) => {
+    if (e.target.closest('[data-zip]')) {
+      const r = await get('geo', 'zip', { code: f.postal.value }).catch(() => ({ found: false }));
+      if (r.found) { f.address.value = r.address; f.address.focus(); toast('住所を入れました。続けて番地を入れてください'); } else toast('郵便番号から住所が見つかりませんでした');
+    }
+    if (e.target.closest('[data-verify]')) {
+      if (!f.address.value.trim()) return toast('住所を入れてください');
+      const r = await get('geo', 'address', { q: f.address.value }).catch(() => ({ found: false }));
+      if (r.found) {
+        if (!pos.placeId) { pos.lat = r.lat; pos.lng = r.lng; }
+        pos.verified = true;
+        $('#verified').innerHTML = `✅ 実在する住所を確認しました（${esc(r.title)}）`;
+        suggestStation(r); drawMap();
+      } else { $('#verified').innerHTML = '<span class="error">住所が見つかりませんでした。番地まで正しく入っているか確認してください</span>'; }
+    }
     if (e.target.closest('[data-add-slot]')) {
       if ($$('.slot-row').length >= LIMITS.maxSlots) return toast(`時間枠は${LIMITS.maxSlots}個までです`);
       $('#slots').insertAdjacentHTML('beforeend', slotRow());
@@ -166,7 +189,7 @@ export async function renderEdit(view, id) {
       slots: $$('.slot-row').map((r) => ({ time: r.querySelector('[name=slotTime]').value, capacity: r.querySelector('[name=slotCap]').value })).filter((x2) => x2.time),
       closedDays: fd.getAll('closedDays').map(Number), cutoff: fd.get('cutoff'),
       localsOrder: fd.get('localsOrder'), notInGuidebooks: fd.has('notInGuidebooks'), welcome: fd.get('welcome'), tips: fd.getAll('tips'), tipsNote: fd.get('tipsNote'),
-      lat: pos.lat, lng: pos.lng, placeId: pos.placeId,
+      lat: pos.lat, lng: pos.lng, placeId: pos.placeId, postal: fd.get('postal'), addressVerified: pos.verified,
     };
     const btn = e.submitter; btn.disabled = true; const label = btn.textContent; btn.textContent = '保存・翻訳中…';
     try {

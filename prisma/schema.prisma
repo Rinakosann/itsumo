@@ -23,6 +23,8 @@ model User {
   passwordHash   String
   role           String // traveler | business
   name           String
+  nameKana       String? // 事業者：フリガナ
+  phone          String? // 事業者：運営からの連絡用（公開しない）
   currency       String    @default("USD")
   termsAgreedAt  DateTime
   failedLogins   Int       @default(0)
@@ -66,6 +68,8 @@ model Shop {
   area        String // uji | kyoto | osaka | nara
   name        Json // { ja, en }
   address     String
+  postal      String? // 郵便番号
+  addressVerified Boolean @default(false) // 国土地理院の住所検索 or Googleマップで実在を確認した
   lat         Float?
   lng         Float?
   placeId     String? // Googleマップの場所ID（実在のお店と紐づける）

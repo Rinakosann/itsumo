@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../server/db.js';
 import { requireUser } from '../server/auth.js';
 import { jaToEn } from '../server/translate.js';
+import { geocodeJa } from '../server/geo.js';
 import { isPast } from '../shared/booking.js';
 import { AREAS, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, CANCEL_REASONS, LIMITS, TIPS } from '../shared/constants.js';
 import { todayJST, addDays } from '../shared/time.js';
@@ -50,6 +51,8 @@ function readShop(b) {
       stationKm: need(km != null && km >= 0 && km <= 100 ? Math.round(km * 10) / 10 : null, '主要駅からの距離'),
       link: link || null,
       lat: num(b.lat), lng: num(b.lng), placeId: str(b.placeId, { max: 300 }) || null,
+      postal: str(b.postal, { max: 8 }).replace(/[^0-9-]/g, '') || null,
+      addressVerified: Boolean(b.addressVerified) && num(b.lat) != null,
       bringJa: str(b.bring, { max: 200 }),
       minPeople: num(b.minPeople) ? Math.max(1, Math.min(LIMITS.maxCapacity, Math.round(num(b.minPeople)))) : null,
       dietary: (Array.isArray(b.dietary) ? b.dietary : []).filter((d) => ids(DIETARY).includes(d) && d !== 'allergy'),
@@ -107,13 +110,20 @@ export default api({
     const bring = v.bringJa ? keep(prev?.extra?.bring, v.bringJa) ?? (await jaToEn(v.bringJa)) : null;
     const tr = async (field, ja) => (ja ? keep(prev?.[field], ja) ?? (await jaToEn(ja)) : null);
     const [localsOrder, welcome, tipsNote] = await Promise.all([tr('localsOrder', v.localsOrderJa), tr('welcome', v.welcomeJa), tr('tipsNote', v.tipsNoteJa)]);
+    // 住所が未確認なら、保存のときにサーバーでも確認する（押し忘れても公開が止まらないように）
+    if (!v.addressVerified && v.address) {
+      const hit = await geocodeJa(v.address);
+      if (hit) { v.addressVerified = true; if (v.lat == null) { v.lat = hit.lat; v.lng = hit.lng; } }
+    }
+    // 架空の店舗を防ぐため、公開には住所の確認（国土地理院の住所検索かGoogleマップで実在を確認）が必要
+    if (!v.addressVerified) missing.push('住所の確認（「住所を確認する」を押す）');
     const publish = wantPublish && missing.length === 0;
 
     const data = {
       category: v.category ?? 'experience', area: v.area ?? AREAS[0].id, name, address: v.address ?? '', description,
       priceJPY: v.priceJPY ?? 0, durationMin: v.durationMin ?? 60, payment: v.payment ?? 'cash',
       customers: v.customers ?? 'mixed', years: v.years ?? '<10', stationKm: v.stationKm ?? 0,
-      link: v.link, lat: v.lat, lng: v.lng, placeId: v.placeId,
+      link: v.link, lat: v.lat, lng: v.lng, placeId: v.placeId, postal: v.postal, addressVerified: v.addressVerified,
       extra: v.category === 'restaurant'
         ? { dietary: v.dietary, allergyOk: v.allergyOk, menuStyle: v.menuStyle }
         : { bring, minPeople: v.minPeople },
