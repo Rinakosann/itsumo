@@ -435,3 +435,115 @@ body.business .big-btn { font-size: 18px; padding: 16px; }
 .intro-dots span.on { background: var(--brand); }
 @keyframes hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 @media (prefers-reduced-motion: reduce) { .intro-chara { animation: none; } }
+
+/* ==========================================================
+   ITSUMO：夜の街・ちょうちん（旅行者画面とトップ）
+   深い藍色の夜に、ちょうちんの橙。ケロの緑がアクセント
+   ========================================================== */
+body.night {
+  --bg: #121731;
+  --card: #1b2246;
+  --ink: #f6efe4;
+  --muted: #aab1cf;
+  --line: #2e3866;
+  --brand: #ff9f43;          /* ちょうちんの橙 */
+  --brand-soft: rgba(255, 159, 67, .14);
+  --accent: #ff6b7d;         /* 赤ちょうちん */
+  --accent-soft: rgba(255, 107, 125, .14);
+  --ok: #8fe39c;             /* ケロの緑 */
+  --ok-soft: rgba(143, 227, 156, .14);
+  --warn: #ffd27a;
+  --warn-soft: rgba(255, 210, 122, .13);
+  background: radial-gradient(ellipse at 50% -10%, #263066 0%, #121731 55%) fixed, #121731;
+  color: var(--ink);
+}
+body.night .btn { background: var(--card); color: var(--ink); border-color: var(--line); }
+body.night .btn.primary { background: linear-gradient(180deg, #ffb35c, #ff8f2a); border-color: #ff8f2a; color: #2a1405; box-shadow: 0 6px 18px rgba(255, 143, 42, .25); }
+body.night .btn.danger { color: var(--accent); }
+body.night .badge, body.night .cal button:disabled, body.night .table th { background: #252d58; color: var(--muted); }
+body.night .quote, body.night .original, body.night .kv > div { background: #202851; }
+body.night .form input:not([type=checkbox]):not([type=radio]), body.night .form select, body.night .form textarea, body.night select,
+body.night .chat-form input, body.night input[type=search] { background: #141a38; color: var(--ink); border-color: var(--line); }
+body.night .tabbar, body.night .app-header { background: rgba(18, 23, 49, .92); backdrop-filter: blur(10px); border-color: var(--line); }
+body.night .app-header .brand-mark { background: radial-gradient(circle at 50% 40%, #ffd27a, #ff8f2a); color: #2a1405; box-shadow: 0 0 14px rgba(255, 159, 67, .6); }
+body.night .brand-name { font-family: 'Shippori Mincho B1', 'Hiragino Mincho ProN', serif; letter-spacing: .12em; }
+body.night .tab.active { color: var(--brand); }
+body.night .sheet-panel { background: #161c3c; }
+body.night .sheet-close { background: #252d58; color: var(--ink); }
+body.night .toast { background: #f6efe4; color: #121731; }
+body.night a { color: inherit; }
+body.night .link { color: var(--brand); }
+body.night .card { background: linear-gradient(180deg, #1d2550, #19204a); border-color: #2e3866; }
+body.night a.card:hover { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand), 0 8px 24px rgba(255, 159, 67, .12); }
+body.night .place-card .thumb { background: radial-gradient(circle at 50% 40%, #3a2a55, #241c44) !important; }
+body.night .fact { background: rgba(143, 227, 156, .12); color: #b9f0c1; }
+body.night .fact.special { background: rgba(255, 107, 125, .15); color: #ffb3bd; }
+body.night .fact.first { background: rgba(255, 210, 122, .15); color: #ffe0a3; }
+body.night .locals-order { background: linear-gradient(90deg, rgba(255, 159, 67, .18), rgba(255, 159, 67, .06)); color: #ffd9ad; border-left: 3px solid var(--brand); }
+body.night .owner-says { background: #1d2550; border-color: rgba(255, 159, 67, .45); }
+body.night .phrase { background: #1f2752; border-color: #36407a; }
+body.night .phrase .romaji { color: var(--brand); }
+body.night .slot { background: var(--card); color: var(--ink); border-color: var(--line); }
+body.night .slot.on, body.night .cal button.on { background: var(--brand); border-color: var(--brand); color: #2a1405; }
+body.night .cal button { background: #1d2550; color: var(--ink); border-color: var(--line); }
+body.night .chip { background: var(--card); color: var(--ink); border-color: var(--line); }
+body.night .chip.on, body.night .choice.on { background: var(--brand); color: #2a1405; border-color: var(--brand); }
+body.night .choice { background: var(--card); color: var(--ink); border-color: var(--line); }
+body.night .greet { background: linear-gradient(90deg, #233063, #1b2246); border-color: #36407a; }
+body.night .msg.mine .msg-body { background: linear-gradient(180deg, #ffb35c, #ff8f2a); color: #2a1405; border-color: #ff8f2a; }
+body.night .msg-body { background: #1f2752; border-color: #36407a; }
+body.night .notice.info { background: rgba(143, 227, 156, .1); color: #c6f3cd; }
+body.night .notice.warn { background: rgba(255, 210, 122, .12); color: #ffe0a3; }
+body.night .seg button { background: var(--card); color: var(--ink); }
+body.night .seg button.on { background: var(--brand); color: #2a1405; }
+body.night .intro { background: radial-gradient(ellipse at 50% 20%, #2b3570 0%, #121731 65%); }
+body.night .intro-box { background: #1b2246; border-color: var(--brand); }
+body.night .intro-name { background: var(--brand); color: #2a1405; }
+body.night .map-off { background: #1d2550; }
+body.night h2 { letter-spacing: .02em; }
+body.night .demo-tag { display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .08em; background: #ffd27a; color: #2a1405; border-radius: 4px; padding: 1px 6px; vertical-align: middle; }
+
+/* トップ：ちょうちんが灯る */
+.night-top { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 16px 24px; position: relative; overflow: hidden; }
+.stars { position: absolute; inset: 0; background-image: radial-gradient(1px 1px at 20% 30%, #fff8, transparent), radial-gradient(1px 1px at 70% 20%, #fff6, transparent), radial-gradient(1.5px 1.5px at 40% 70%, #fff5, transparent), radial-gradient(1px 1px at 85% 60%, #fff7, transparent), radial-gradient(1px 1px at 10% 80%, #fff5, transparent); pointer-events: none; }
+.lanterns { display: flex; gap: clamp(8px, 3vw, 20px); justify-content: center; margin-bottom: 18px; }
+.lantern { width: clamp(54px, 15vw, 78px); transform-origin: 50% 0; animation: sway 4s ease-in-out infinite; animation-delay: calc(var(--d) * -1); }
+.lantern .lantern-svg { width: 100%; height: auto; display: block; filter: grayscale(1) brightness(.35); transition: filter .6s ease; }
+.night-top .lantern .lantern-svg { animation: light .9s ease forwards; animation-delay: var(--d); }
+@keyframes light { to { filter: grayscale(0) brightness(1) drop-shadow(0 0 14px rgba(255, 170, 70, .85)) drop-shadow(0 0 34px rgba(255, 120, 40, .45)); } }
+@keyframes sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+.night-top .logo, .night-top .copy, .night-top .copy-en, .night-top .entrances, .night-top .kero-peek, .night-top .footer-links { opacity: 0; transform: translateY(8px); animation: rise .8s ease forwards; }
+.night-top .logo { animation-delay: 2.7s; }
+.night-top .copy { animation-delay: 3.1s; }
+.night-top .copy-en { animation-delay: 3.3s; }
+.night-top .entrances { animation-delay: 3.7s; }
+.night-top .kero-peek, .night-top .footer-links { animation-delay: 4s; }
+@keyframes rise { to { opacity: 1; transform: none; } }
+.night-top.lit-all * { animation-delay: 0s !important; animation-duration: .01s !important; }
+.night-top.lit-all .lantern { animation: sway 4s ease-in-out infinite !important; }
+.logo { font-family: 'Shippori Mincho B1', 'Hiragino Mincho ProN', serif; font-size: clamp(42px, 12vw, 72px); letter-spacing: .18em; margin: 6px 0 6px 0.18em; font-weight: 800; color: #fff3e0; text-shadow: 0 0 24px rgba(255, 170, 70, .45); }
+.copy { font-family: 'Shippori Mincho B1', 'Hiragino Mincho ProN', serif; font-size: clamp(18px, 5vw, 24px); margin: 4px 0 0; color: #ffe6c4; }
+.copy-en { margin: 4px 0 26px; color: var(--muted); letter-spacing: .06em; font-size: 14px; }
+.entrances { display: grid; gap: 12px; width: min(460px, 100%); }
+.entrance { display: flex; align-items: center; gap: 14px; text-align: left; padding: 16px 18px; border-radius: 18px; text-decoration: none; color: var(--ink); background: rgba(27, 34, 70, .85); border: 1px solid #36407a; transition: transform .15s, box-shadow .15s; }
+.entrance:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(255, 143, 42, .18); border-color: var(--brand); }
+.entrance.traveler { background: linear-gradient(135deg, rgba(255, 159, 67, .22), rgba(27, 34, 70, .9)); border-color: rgba(255, 159, 67, .6); }
+.entrance .emo { font-size: 34px; }
+.entrance b { display: block; font-size: 19px; }
+.entrance small { color: var(--muted); font-size: 13px; }
+.kero-peek { position: absolute; right: 14px; bottom: 54px; width: 56px; height: 56px; }
+.kero-peek svg { width: 100%; height: 100%; }
+.night-top .footer-links { margin-top: 26px; font-size: 12px; }
+.night-top .footer-links a { color: var(--muted); margin: 0 6px; }
+@media (prefers-reduced-motion: reduce) { .lantern { animation: none; } }
+
+/* お店の方（事業者）：明るく読みやすいまま、ITSUMOの色をそろえる */
+body.business { --brand: #c4561c; --brand-soft: #fff1e6; }
+body.business .app-header { background: #121731; color: #f6efe4; border-color: #121731; }
+body.business .app-header .brand-mark { background: radial-gradient(circle at 50% 40%, #ffd27a, #ff8f2a); color: #2a1405; }
+body.business .app-header #who { color: #aab1cf; }
+body.business .brand-name { font-family: 'Shippori Mincho B1', 'Hiragino Mincho ProN', serif; letter-spacing: .1em; }
+.hero-line { text-align: center; margin: 6px 0 14px; }
+.hero-ja { font-family: 'Shippori Mincho B1', 'Hiragino Mincho ProN', serif; font-size: 20px; margin: 0; color: #ffe6c4; }
+.hero-en { margin: 2px 0 0; font-size: 12px; letter-spacing: .08em; color: var(--muted); }
+body:not(.night) .hero-ja { color: var(--ink); }

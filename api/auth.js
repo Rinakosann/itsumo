@@ -87,8 +87,8 @@ export default api({
         const page = user.role === 'business' ? '/business' : '/traveler';
         const link = `${appUrl()}${page}#/reset?token=${token}`;
         await sendEmail(user.role === 'business'
-          ? { to: user.email, subject: '【Tabi Local】パスワードの再設定', text: `${user.name} 様\n\n下のリンクから新しいパスワードを設定してください（${LIMITS.resetLinkMinutes}分間・1回だけ有効）。\n${link}\n\nお心当たりがない場合は、このメールを無視してください。` }
-          : { to: user.email, subject: '[Tabi Local] Reset your password', text: `Hi ${user.name},\n\nOpen this link to set a new password (valid for ${LIMITS.resetLinkMinutes} minutes, one time only):\n${link}\n\nIf you did not request this, you can ignore this email.` });
+          ? { to: user.email, subject: '【ITSUMO】パスワードの再設定', text: `${user.name} 様\n\n下のリンクから新しいパスワードを設定してください（${LIMITS.resetLinkMinutes}分間・1回だけ有効）。\n${link}\n\nお心当たりがない場合は、このメールを無視してください。` }
+          : { to: user.email, subject: '[ITSUMO] Reset your password', text: `Hi ${user.name},\n\nOpen this link to set a new password (valid for ${LIMITS.resetLinkMinutes} minutes, one time only):\n${link}\n\nIf you did not request this, you can ignore this email.` });
       }
     }
     return { ok: true };

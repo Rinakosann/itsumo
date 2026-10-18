@@ -9,7 +9,7 @@ export const en = (o) => (o ? { text: o.en || o.ja || '', ja: o.ja || '', failed
 export function toPublic(s) {
   const x = s.extra ?? {};
   return {
-    id: s.id, category: s.category, area: s.area, name: en(s.name), address: s.address, lat: s.lat, lng: s.lng, placeId: s.placeId, addressVerified: s.addressVerified,
+    id: s.id, isDemo: s.isDemo, category: s.category, area: s.area, name: en(s.name), address: s.address, lat: s.lat, lng: s.lng, placeId: s.placeId, addressVerified: s.addressVerified,
     description: en(s.description), priceJPY: s.priceJPY, durationMin: s.durationMin, payment: s.payment, link: s.link,
     customers: s.customers, years: s.years, stationKm: s.stationKm,
     localsOrder: en(s.localsOrder), notInGuidebooks: s.notInGuidebooks, welcome: en(s.welcome), tips: s.tips ?? [], tipsNote: en(s.tipsNote),

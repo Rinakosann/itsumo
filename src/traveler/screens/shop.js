@@ -19,6 +19,7 @@ export async function render(view, id) {
   view.innerHTML = `
     <section class="detail">
       <a class="back" href="#/">← ${t('back')}</a>
+      ${s.isDemo ? `<p class="notice warn small"><span class="demo-tag">${t('demoTag')}</span> ${t('demoNote')}</p>` : ''}
       <h2>${translated(s.name)}</h2>
       <p class="sub">${esc(label(CATEGORIES, s.category))} · ${esc(a?.en ?? '')}</p>
       <div class="facts">

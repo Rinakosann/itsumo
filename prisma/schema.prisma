@@ -64,6 +64,7 @@ model Shop {
   ownerId     String
   owner       User      @relation(fields: [ownerId], references: [id])
   status      String    @default("draft") // draft | published | hidden（運営が非公開）
+  isDemo      Boolean   @default(false) // デモ用の架空の店舗（画面に「DEMO」と出す。npm run demo:remove で消せる）
   category    String // experience | restaurant
   area        String // uji | kyoto | osaka | nara
   name        Json // { ja, en }

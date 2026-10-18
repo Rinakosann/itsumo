@@ -10,9 +10,9 @@ const updated = '2026-10-16';
 export const TERMS_EN = {
   title: 'Terms of Use',
   sections: [
-    ['About this service', `Tabi Local connects travelers with small local shops in Japan. Tabi Local is an intermediary only: the experience, food and service at each shop are the responsibility of that shop. Operator: ${OPERATOR.nameEn}. Contact: ${OPERATOR.email}.`],
+    ['About this service', `ITSUMO connects travelers with small local shops in Japan. ITSUMO is an intermediary only: the experience, food and service at each shop are the responsibility of that shop. Operator: ${OPERATOR.nameEn}. Contact: ${OPERATOR.email}.`],
     ['Accounts', 'You need an account with your email and a password to chat with shops or book. Keep your password secret. You are responsible for activity on your account.'],
-    ['Bookings and payment', 'A booking is confirmed immediately if the time slot has space. You pay the shop directly on the day (cash or card, as shown for each shop). Tabi Local does not take any payment.'],
+    ['Bookings and payment', 'A booking is confirmed immediately if the time slot has space. You pay the shop directly on the day (cash or card, as shown for each shop). ITSUMO does not take any payment.'],
     ['Cancellation', 'You can cancel for free until the start time. A shop may cancel your booking (for example, temporary closure or weather); the reason is shown in My bookings.'],
     ['Information on shop pages', 'Shop information, including the customer mix, years in business, distance from the main station and food information, is provided by each shop. We cannot guarantee it is accurate. Shop pages are published immediately and checked by us afterwards. If you have a serious allergy, confirm directly with the shop before visiting.'],
     ['Translation', 'Shop pages and chat messages are translated automatically and may contain mistakes. You can always see the original text.'],
@@ -45,7 +45,7 @@ export const PRIVACY_EN = {
 export const TERMS_JA = {
   title: '利用規約（事業者向け）',
   sections: [
-    ['このサービスについて', `Tabi Localは、旅行者と地域の小さなお店をつなぐ仲介のサービスです。体験・料理・接客の内容そのものは、各事業者の責任とします。運営者：${OPERATOR.nameJa}。問い合わせ先：${OPERATOR.email}。`],
+    ['このサービスについて', `ITSUMOは、旅行者と地域の小さなお店をつなぐ仲介のサービスです。体験・料理・接客の内容そのものは、各事業者の責任とします。運営者：${OPERATOR.nameJa}。問い合わせ先：${OPERATOR.email}。`],
     ['アカウント', 'メールアドレスとパスワードで登録します。複数の端末から同じアカウントでログインできます。パスワードの管理はご自身でお願いします。'],
     ['店舗の掲載', '店舗は保存するとすぐに公開されます。運営は新しく公開された店舗と、旅行者からの報告を毎日確認し、事実と異なる・不適切と判断した掲載は非公開にすることがあります。客層・営業年数・主要駅からの距離・食べ物の情報は、事実にもとづいて正確に入力してください。'],
     ['予約', '時間枠の上限人数の範囲で、予約は即時に確定します。受付を止めたい日は「受付停止日」で設定してください。やむを得ずキャンセルする場合は、理由を選んでキャンセルできます（理由は英語に翻訳して旅行者に表示されます）。'],

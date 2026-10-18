@@ -1,4 +1,6 @@
-# Tabi Local（MVP縮小版）
+# ITSUMO（いつもの）— 地元の「いつもの」に、まざろう。
+
+夜の街・ちょうちんがテーマ。旧名 Tabi Local（MVP縮小版）。
 
 事業者が日本語だけで店舗を登録し、旅行者が英語の一覧から選んで、翻訳チャットと即時予約まで進めるアプリ。
 仕様書「MVP縮小版」にもとづく。本番：https://tabi-local-mvp.vercel.app
@@ -47,3 +49,11 @@ npx vite --port 5174         # http://localhost:5174
 - 新しく公開された店舗と「この店舗を報告」（`Report` 表）を毎日確認。怪しい店舗は `Shop.status` を `hidden` にする
 - 成功指標：`ShopView`（詳細ページの閲覧・1回ごと）、`Booking`、`Message`
 - DB を見る：`npm run db:studio`（`.env.local` を本番の値にして実行）／ Neon のダッシュボードでバックアップ（復元ポイント）を確認
+
+## デモ用のサンプル店舗
+架空の6店舗（画面に「DEMO」と表示）。本物のお店が増えたら消せます。
+```bash
+npm run demo:add      # 入れる（入れ直し）
+npm run demo:remove   # 消す
+```
+本番に対しては、`npx vercel env pull` した環境変数で `node prisma/demo-shops.js add|remove` を実行する。

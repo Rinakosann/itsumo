@@ -47,7 +47,7 @@ export function shopCard(s) {
     <a class="card place-card" href="#/shop/${s.id}">
       <div class="thumb" style="background:#e3f0d8">${s.category === 'restaurant' ? '🍽️' : '🎋'}</div>
       <div class="card-body">
-        <h3>${esc(s.name.text)}</h3>
+        <h3>${s.isDemo ? `<span class="demo-tag">${t('demoTag')}</span> ` : ''}${esc(s.name.text)}</h3>
         <div class="sub">${esc(label(CATEGORIES, s.category))} · ${esc(a?.en ?? '')}</div>
         <div class="price-line">${price(s.priceJPY)} <span class="muted">${t('perPerson')}</span></div>
         ${s.localsOrder?.text ? `<div class="locals-order">🍢 <b>${t('localsOrder')}:</b> ${esc(s.localsOrder.text)}</div>` : ''}

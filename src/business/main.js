@@ -46,7 +46,7 @@ function renderAuth(mode) {
     box(`<h2>新しいパスワード</h2><form class="form" id="f"><label>パスワード（8文字以上）<input name="password" type="password" minlength="8" required /></label>
       <p class="error" id="err" role="alert"></p><button class="btn primary block" type="submit">保存</button></form>`);
   } else {
-    box(`<h2>Tabi Local 事業者</h2>
+    box(`<h2>ITSUMO 事業者</h2>
       <p>海外からのお客様の予約を、<b>日本語だけ</b>で受けられます。言葉のやり取りは自動で翻訳します。</p>
       <details class="flow" ${localStorage.getItem('tlm.biz.seen') ? '' : 'open'}><summary>はじめての方へ：予約を受けるまでの流れ</summary>
         <ol class="flow-steps">

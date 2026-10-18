@@ -5,7 +5,7 @@
 // ============================================================
 import { esc, openSheet, closeSheet, store, storage } from '../../common/ui.js';
 import { makeMap, placeSearch, mapsEnabled } from '../../common/maps.js';
-import { AVATAR, FULL } from '../../common/character-art.js';
+import { AVATAR, FULL_LANTERN } from '../../common/character-art.js';
 import { state, saveFilters, setCurrency, guessedCurrency, loadShops, loadRates } from '../state.js';
 import { t } from '../strings.js';
 import { shopCard, rateNote, label } from '../components.js';
@@ -47,7 +47,7 @@ function keroIntro(after) {
     const last = i === lines.length - 1;
     el.innerHTML = `
       <button class="intro-skip" data-skip>${t('introSkip')}</button>
-      <div class="intro-chara">${FULL}</div>
+      <div class="intro-chara">${FULL_LANTERN}</div>
       <div class="intro-box" role="dialog" aria-live="polite">
         <span class="intro-name">Kero</span>
         <p>${esc(t(lines[i]))}</p>
@@ -89,6 +89,7 @@ export async function render(view) {
 
   view.innerHTML = `
     <section>
+      <div class="hero-line"><p class="hero-ja">${t('heroJa')}</p><p class="hero-en">${t('heroEn')}</p></div>
       ${state.greetClosed ? '' : `<div class="greet"><div class="char-avatar">${AVATAR}</div><p>${esc(t('greet'))}</p><button data-close-greet aria-label="Close">✕</button></div>`}
       <div class="filter-box">
         <div class="filters-grid">

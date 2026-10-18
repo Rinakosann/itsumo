@@ -177,3 +177,32 @@ export const FULL_YUNOMI = `
   <path d="M70 118q5 6 10 0q5 6 10 0" stroke="${Y.line}" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M76 121q4 5 8 0" fill="#ff8a9a"/>
 </svg>`;
+
+// ============================================================
+//  ITSUMO（夜の街）用：ちょうちん
+//  lantern(char, lit)：文字入りの提灯。lit=false で消えた状態（トップの演出で灯す）
+// ============================================================
+export function lantern(char = '', { id = 'l', color = '#e8452f' } = {}) {
+  return `
+<svg viewBox="0 0 80 120" class="lantern-svg" aria-hidden="true">
+  <defs>
+    <radialGradient id="g-${id}" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#ffe7a8"/><stop offset="45%" stop-color="#ffb347"/><stop offset="100%" stop-color="${color}"/>
+    </radialGradient>
+  </defs>
+  <line x1="40" y1="0" x2="40" y2="14" stroke="#3a2a1a" stroke-width="2"/>
+  <rect x="24" y="12" width="32" height="9" rx="2" fill="#2a1d14"/>
+  <ellipse class="lantern-body" cx="40" cy="62" rx="32" ry="42" fill="url(#g-${id})"/>
+  ${[30, 42, 54, 66, 78, 90].map((y) => `<path d="M${40 - Math.sqrt(1 - ((y - 62) / 42) ** 2) * 32} ${y}h${Math.sqrt(1 - ((y - 62) / 42) ** 2) * 64}" stroke="#7a2a12" stroke-opacity=".35" stroke-width="1.2"/>`).join('')}
+  <rect x="24" y="101" width="32" height="9" rx="2" fill="#2a1d14"/>
+  <path d="M34 110v8M40 110v10M46 110v8" stroke="#2a1d14" stroke-width="2" stroke-linecap="round"/>
+  ${char ? `<text x="40" y="74" text-anchor="middle" font-size="34" font-weight="700" fill="#2a1208" font-family="'Shippori Mincho B1','Hiragino Mincho ProN','Yu Mincho',serif">${char}</text>` : ''}
+</svg>`;
+}
+
+/** ケロ（夜の街）：スマホの代わりに、ちょうちんを持つ */
+export const FULL_LANTERN = FULL
+  .replace(/<!-- スマホを持つ腕 -->[\s\S]*?<circle cx="137" cy="128"[^>]*\/>/, `<!-- ちょうちんを持つ腕 -->
+  <path d="M110 132q14 2 22-10" stroke="${'#7fd98d'}" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <g transform="translate(118 64) scale(.42)">${lantern('', { id: 'kero' }).replace(/<\/?svg[^>]*>/g, '')}</g>
+  <circle cx="134" cy="121" r="8" fill="#7fd98d" stroke="#3f8a52" stroke-width="2"/>`);

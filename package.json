@@ -14,7 +14,9 @@
     "db:local": "node scripts/local-db.js",
     "db:push": "dotenv -e .env.local -- prisma db push",
     "db:prepare": "dotenv -e .env.local -- node scripts/prepare-db.js",
-    "db:studio": "dotenv -e .env.local -- prisma studio"
+    "db:studio": "dotenv -e .env.local -- prisma studio",
+    "demo:add": "dotenv -e .env.local -- node prisma/demo-shops.js add",
+    "demo:remove": "dotenv -e .env.local -- node prisma/demo-shops.js remove"
   },
   "prisma": {
     "schema": "prisma/schema.prisma"

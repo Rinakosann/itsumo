@@ -87,7 +87,7 @@ export const TIPS = [
 
 // お店で使える日本語（旅行者向け・確定画面と詳細に出す）
 export const PHRASES = [
-  { ja: 'こんにちは。Tabi Localで予約した{name}です。', romaji: 'Konnichiwa. Tabi Local de yoyaku shita {name} desu.', en: "Hello. I'm {name}, I booked on Tabi Local." },
+  { ja: 'こんにちは。ITSUMOで予約した{name}です。', romaji: 'Konnichiwa. ITSUMO de yoyaku shita {name} desu.', en: "Hello. I'm {name}, I booked on ITSUMO." },
   { ja: 'おすすめは何ですか？', romaji: 'Osusume wa nan desu ka?', en: 'What do you recommend?' },
   { ja: '地元の人がよく頼むものをください。', romaji: 'Jimoto no hito ga yoku tanomu mono o kudasai.', en: 'I would like what the locals usually order.' },
   { ja: 'これは食べられません。', romaji: 'Kore wa taberaremasen.', en: "I can't eat this." },
@@ -112,7 +112,7 @@ export const LIMITS = {
 
 // 運営者と問い合わせ先（TODO: 仮。GitHubに上げる前に確認する）
 export const OPERATOR = {
-  nameJa: 'Tabi Local 運営事務局（仮）',
-  nameEn: 'Tabi Local Operations Office (provisional)',
+  nameJa: 'ITSUMO 運営事務局（仮）',
+  nameEn: 'ITSUMO Operations Office (provisional)',
   email: 'support@example.com',
 };
