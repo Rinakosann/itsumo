@@ -28,11 +28,11 @@ export function render(view) {
       ${u ? `<div class="section"><button class="btn block" data-logout>${t('logout')}</button><button class="btn block danger" data-delete>${t('deleteAccount')}</button></div>` : ''}
     </section>`;
   const f = view.querySelector('#f');
-  if (f) f.onsubmit = async (e) => { e.preventDefault(); try { await post('auth', 'profile', { name: f.name.value }); await refreshMe(); toast('Saved'); } catch (er) { toast(errText(er)); } };
+  if (f) f.onsubmit = async (e) => { e.preventDefault(); try { await post('auth', 'profile', { name: f.name.value }); await refreshMe(); toast(t('saved')); } catch (er) { toast(errText(er)); } };
   view.querySelector('#cur').onchange = async (e) => {
     setCurrency(e.target.value);
     if (u) await post('auth', 'profile', { currency: e.target.value }).catch(() => {});
-    toast('Saved');
+    toast(t('saved'));
   };
   view.onclick = async (e) => {
     if (e.target.closest('[data-logout]')) { await post('auth', 'logout'); await refreshMe(); document.dispatchEvent(new CustomEvent('auth-changed')); location.hash = '#/'; }

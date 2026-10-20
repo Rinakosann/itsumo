@@ -1,12 +1,12 @@
 // ============================================================
-//  店舗の登録・編集（日本語で入力 → 保存すると英語に自動翻訳して即公開）
+//  店舗の登録・編集（日本語で入力 → 保存すると英語・中国語・韓国語に自動翻訳して即公開）
 //  Googleマップで実在のお店を検索して選ぶと、店名・住所・位置・HP・主要駅からの距離（参考値）が入る。
 //  必須項目が空なら下書きとして保存（公開しない）。
 // ============================================================
 import { $, $$, esc, toast } from '../../common/ui.js';
 import { get, post } from '../../common/api.js';
 import { placeSearch, makeMap, mapsEnabled, distanceKm } from '../../common/maps.js';
-import { AREAS, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, LIMITS, TIPS } from '../../../shared/constants.js';
+import { AREAS, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, LIMITS, TIPS, LOCAL_PCTS } from '../../../shared/constants.js';
 
 const WEEK = ['日', '月', '火', '水', '木', '金', '土'];
 const ERR = { invalid_link: '外部リンクは http:// か https:// で始まるURLを入れてください。' };
@@ -42,7 +42,7 @@ export async function renderEdit(view, id) {
     <section>
       <a class="back" href="#/shops">← 店舗一覧</a>
       <h2>${id === 'new' ? '店舗を登録' : '店舗を編集'}</h2>
-      <p class="notice info small">日本語だけで入力してください。保存すると英語に自動翻訳され、必須項目（＊）がそろっていればすぐに公開されます。</p>
+      <p class="notice info small">日本語だけで入力してください。保存すると<b>英語・中国語・韓国語</b>に自動翻訳され、必須項目（＊）がそろっていればすぐに公開されます。</p>
 
       <form class="form" id="f" novalidate>
         <h4>① Googleマップでお店を探す</h4>
@@ -81,6 +81,16 @@ export async function renderEdit(view, id) {
         <label>地元の人がいつも頼むもの・すること（任意）<input name="localsOrder" maxlength="100" value="${esc(s.localsOrder?.ja ?? '')}" placeholder="例：常連さんはいつも、おでんの大根と熱燗" />
           <span class="muted small">星の評価ではなく、地元の人のふだんの楽しみ方を伝えます。一覧とお店のページに大きく出ます。</span></label>
         <label class="check"><input type="checkbox" name="notInGuidebooks" ${s.notInGuidebooks ? 'checked' : ''}/> ガイドブックや旅行サイトには載っていない</label>
+        <label>地元のお客さんの割合（任意）<select name="localPct"><option value="">選ばない</option>${LOCAL_PCTS.map((p) => `<option value="${p}" ${s.localPct === p ? 'selected' : ''}>地元のお客さん ${p}%（観光客など ${100 - p}%）</option>`).join('')}</select>
+          <span class="muted small">だいたいの割合で大丈夫です。「地元の人が通うお店か」の手がかりとして、旅行者に棒グラフで見せます。</span></label>
+        <div class="form-row">
+          <label>一番人気のメニュー・体験（任意）<input name="popularName" maxlength="40" value="${esc(s.popular?.name?.ja ?? '')}" placeholder="例：抹茶と和菓子のセット" /></label>
+          <label>その値段（円）<input name="popularPrice" type="number" min="0" step="10" value="${s.popular?.priceJPY ?? ''}" /></label>
+        </div>
+
+        <h4>🎁 ITSUMO限定の特典（任意）</h4>
+        <label>ITSUMOから予約したお客様への特典<input name="perk" maxlength="100" value="${esc(s.perk?.ja ?? '')}" placeholder="例：季節の和菓子をひとつサービス" />
+          <span class="muted small">一覧に「🎁 特典あり」と出て、予約の確定画面にも表示されます。お客様が画面を見せたら、特典を渡してください。</span></label>
 
         <h4>👋 海外のお客様へ（任意）</h4>
         <label>店主からのひとこと<input name="welcome" maxlength="100" value="${esc(s.welcome?.ja ?? '')}" placeholder="例：英語は話せませんが、海外の方も大歓迎です！" />
@@ -116,7 +126,8 @@ export async function renderEdit(view, id) {
         </div>
         ${s.status === 'published' ? '<button type="button" class="btn block" data-unpublish>非公開にする</button>' : ''}
       </form>
-      ${s.name?.en ? `<div class="section"><h4>🌐 英語の表示（自動翻訳）</h4><p><b>${esc(s.name.en)}</b><br><span class="small">${esc(s.description?.en ?? '')}</span></p></div>` : ''}
+      ${s.name?.en ? `<div class="section"><h4>🌐 英語の表示（自動翻訳）</h4><p><b>${esc(s.name.en)}</b><br><span class="small">${esc(s.description?.en ?? '')}</span></p>
+        <details class="small"><summary>中国語・韓国語の表示を見る</summary>${[['zh', '中国語（簡体字）'], ['ko', '韓国語']].map(([k, l]) => `<p><b>${l}：</b>${s.name[k] ? esc(s.name[k]) : '<span class="muted">（翻訳できませんでした。もう一度保存すると翻訳を試します）</span>'}<br>${esc(s.description?.[k] ?? '')}</p>`).join('')}</details></div>` : ''}
     </section>`;
 
   const f = $('#f');
@@ -189,6 +200,7 @@ export async function renderEdit(view, id) {
       slots: $$('.slot-row').map((r) => ({ time: r.querySelector('[name=slotTime]').value, capacity: r.querySelector('[name=slotCap]').value })).filter((x2) => x2.time),
       closedDays: fd.getAll('closedDays').map(Number), cutoff: fd.get('cutoff'),
       localsOrder: fd.get('localsOrder'), notInGuidebooks: fd.has('notInGuidebooks'), welcome: fd.get('welcome'), tips: fd.getAll('tips'), tipsNote: fd.get('tipsNote'),
+      localPct: fd.get('localPct'), popularName: fd.get('popularName'), popularPrice: fd.get('popularPrice'), perk: fd.get('perk'),
       lat: pos.lat, lng: pos.lng, placeId: pos.placeId, postal: fd.get('postal'), addressVerified: pos.verified,
     };
     const btn = e.submitter; btn.disabled = true; const label = btn.textContent; btn.textContent = '保存・翻訳中…';
@@ -199,7 +211,7 @@ export async function renderEdit(view, id) {
       if (res.missing.length) $('#err').textContent = `下書きとして保存しました。公開するには次を入力してください：${res.missing.join('、')}`;
       else {
         toast(res.status === 'published' ? '保存して公開しました' : '下書きを保存しました');
-        if (res.translateFailed) toast('英語への翻訳に失敗した項目があります。旅行者には日本語のまま表示されます。もう一度保存すると翻訳を試します。');
+        if (res.translateFailed) toast('翻訳に失敗した項目があります。訳せなかった言語では英語か日本語で表示されます。もう一度保存すると翻訳を試します。');
         renderEdit(view, res.id);
         return;
       }

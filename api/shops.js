@@ -2,21 +2,22 @@
 import { api, bad, notFound, str } from '../server/http.js';
 import { prisma } from '../server/db.js';
 import { currentUser } from '../server/auth.js';
-import { toPublic, availability, bookingCounts } from '../server/shops.js';
+import { toPublic, availability, bookingCounts, weekMarks, langOf } from '../server/shops.js';
 
 export default api({
-  /** 公開中の店舗（新着順） */
-  async 'GET list'() {
+  /** 公開中の店舗（新着順）。?lang= en | zh | ko。1週間分の空き（〇△✕）つき */
+  async 'GET list'(ctx) {
+    const lang = langOf(ctx.query.lang);
     const shops = await prisma.shop.findMany({ where: { status: 'published' }, orderBy: { publishedAt: 'desc' } });
-    const count = await bookingCounts(shops.map((s) => s.id));
-    return { items: shops.map((s) => toPublic({ ...s, _bookingCount: count(s.id) })) };
+    const [count, week] = await Promise.all([bookingCounts(shops.map((s) => s.id)), weekMarks(shops)]);
+    return { items: shops.map((s) => toPublic({ ...s, _bookingCount: count(s.id), _week: week(s) }, lang)) };
   },
 
   async 'GET get'(ctx) {
     const s = await prisma.shop.findFirst({ where: { id: String(ctx.query.id ?? ''), status: 'published' } });
     if (!s) throw notFound();
     const count = await bookingCounts([s.id]);
-    return { item: { ...toPublic({ ...s, _bookingCount: count(s.id) }), ...(await availability(s.id)) } };
+    return { item: { ...toPublic({ ...s, _bookingCount: count(s.id) }, langOf(ctx.query.lang)), ...(await availability(s.id)) } };
   },
 
   /** 成功指標：詳細ページの閲覧を1回ごとに記録 */

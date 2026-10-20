@@ -1,11 +1,14 @@
 // ============================================================
-//  旅行者画面（英語）の入口。画面は URL の # で切り替える（ROUTES）。
+//  旅行者画面（英語・中国語・韓国語）の入口。画面は URL の # で切り替える（ROUTES）。
 //  閲覧にログインは不要。チャットと予約を始めるときにログインを求める。
 // ============================================================
 import '../common/style.css';
 import { $, $$, esc, setReturnTo, closeSheet } from '../common/ui.js';
 import { get } from '../common/api.js';
-import { state, refreshMe } from './state.js';
+import { state, refreshMe, setLang } from './state.js';
+import { post } from '../common/api.js';
+import { sushi } from '../common/character-art.js';
+import { LANGS } from '../../shared/constants.js';
 import { t, errText } from './strings.js';
 import * as list from './screens/list.js';
 import * as shop from './screens/shop.js';
@@ -56,7 +59,7 @@ async function route() {
   if (NEEDS_LOGIN.includes(name) && !state.user) { setReturnTo(location.hash); location.hash = '#/login'; return; }
   view.onclick = null; view.onchange = null; view.oninput = null;
   renderNav();
-  view.innerHTML = `<p class="empty">${t('loading')}</p>`;
+  view.innerHTML = `<div class="loader"><div class="lane">${['maguro', 'salmon', 'tamago', 'ebi', 'ikura'].map((k) => `<span>${sushi(k)}</span>`).join('')}</div><p>${t('loadingSushi')}</p></div>`;
   try {
     await (ROUTES[name] ?? list.render)(view, id, new URLSearchParams(qs));
   } catch (e) {
@@ -68,12 +71,27 @@ async function route() {
   window.scrollTo(0, 0);
 }
 
+/** 表示言語の切り替え（右上）。お店の文も選んだ言語の翻訳に変わる */
+function renderLangSwitch() {
+  const sel = $('#lang-switch');
+  sel.innerHTML = LANGS.map((l) => `<option value="${l.id}" ${l.id === state.lang ? 'selected' : ''}>🌐 ${l.label}</option>`).join('');
+}
+$('#lang-switch').onchange = (e) => {
+  setLang(e.target.value);
+  if (state.user) post('auth', 'profile', { lang: state.lang }).catch(() => {});
+  document.dispatchEvent(new CustomEvent('lang-changed'));
+  route();
+};
+document.addEventListener('lang-changed', () => { renderLangSwitch(); renderNav(); });
+
 window.addEventListener('hashchange', route);
 document.addEventListener('auth-changed', refreshBadges);
 document.addEventListener('badges-changed', refreshBadges);
 setInterval(() => { if (!document.hidden) refreshBadges(); }, 30000); // 新着メッセージ（画面上の未読バッジ）
 
 (async () => {
+  setLang(state.lang);
+  renderLangSwitch();
   await refreshMe().catch(() => {});
   renderNav();
   route();

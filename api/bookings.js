@@ -3,20 +3,20 @@ import { api, bad, notFound, str, isDate, isTime } from '../server/http.js';
 import { prisma } from '../server/db.js';
 import { requireUser } from '../server/auth.js';
 import { translate } from '../server/translate.js';
-import { toPublic } from '../server/shops.js';
+import { toPublic, loc } from '../server/shops.js';
 import { isOpenDate, isPast } from '../shared/booking.js';
 import { DIETARY, LIMITS } from '../shared/constants.js';
 import { todayJST, jstTime } from '../shared/time.js';
 
 const traveler = (ctx) => requireUser(ctx, 'traveler');
 
-function view(b) {
+function view(b, lang) {
   return {
     id: b.id, date: b.date, time: b.time, people: b.people, dietary: b.dietary,
-    message: b.message?.en ?? null,
+    message: b.message ? b.message[b.message.lang ?? 'en'] ?? null : null,
     status: b.status === 'confirmed' && isPast(b) ? 'completed' : b.status,
-    cancelReason: b.cancelReason, cancelNote: b.cancelNote ? { text: b.cancelNote.en || b.cancelNote.ja, failed: !b.cancelNote.en && Boolean(b.cancelNote.ja) } : null,
-    createdAt: b.createdAt, shop: toPublic(b.shop), threadId: b.threadId ?? null,
+    cancelReason: b.cancelReason, cancelNote: loc(b.cancelNote, lang),
+    createdAt: b.createdAt, shop: toPublic(b.shop, lang), threadId: b.threadId ?? null,
   };
 }
 
@@ -26,7 +26,7 @@ export default api({
     const rows = await prisma.booking.findMany({ where: { travelerId: user.id }, include: { shop: true }, orderBy: [{ date: 'asc' }, { time: 'asc' }] });
     const threads = await prisma.thread.findMany({ where: { travelerId: user.id }, select: { id: true, shopId: true } });
     const byShop = Object.fromEntries(threads.map((t) => [t.shopId, t.id]));
-    return { items: rows.map((b) => view({ ...b, threadId: byShop[b.shopId] })) };
+    return { items: rows.map((b) => view({ ...b, threadId: byShop[b.shopId] }, user.lang)) };
   },
 
   async 'GET get'(ctx) {
@@ -34,7 +34,7 @@ export default api({
     const b = await prisma.booking.findFirst({ where: { id: String(ctx.query.id ?? ''), travelerId: user.id }, include: { shop: true } });
     if (!b) throw notFound();
     const th = await prisma.thread.findUnique({ where: { shopId_travelerId: { shopId: b.shopId, travelerId: user.id } }, select: { id: true } });
-    return { item: view({ ...b, threadId: th?.id }) };
+    return { item: view({ ...b, threadId: th?.id }, user.lang) };
   },
 
   /** 予約を確定する。確定の直前に残り人数をもう一度確認し、同時に予約されたら後の人は満席になる */
@@ -56,8 +56,10 @@ export default api({
     if (future >= LIMITS.maxFutureBookings) throw bad('too_many_bookings');
 
     const dietary = (Array.isArray(ctx.body.dietary) ? ctx.body.dietary : []).filter((d) => DIETARY.some((x) => x.id === d));
-    const msgEn = str(ctx.body.message, { max: LIMITS.messageMaxChars });
-    const message = msgEn ? { en: msgEn, ja: await translate(msgEn, 'en', 'ja') } : null;
+    // メッセージは旅行者の言語のまま保存し、日本語訳をつける { lang, [lang]: 原文, ja: 訳 }
+    const msg = str(ctx.body.message, { max: LIMITS.messageMaxChars });
+    const lang = user.lang ?? 'en';
+    const message = msg ? { lang, [lang]: msg, ja: await translate(msg, lang, 'ja') } : null;
 
     // 同時に同じ枠を予約しても上限を超えないよう、まとめて確認して確定（競合したら少し待ってやり直す）
     for (let attempt = 0; attempt < 3; attempt++) {

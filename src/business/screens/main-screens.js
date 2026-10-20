@@ -31,7 +31,7 @@ export async function renderBookings(view) {
       <div class="sub">🏪 ${esc(b.shopName)} · 👥 ${b.people}名</div>
       <div class="sub">👤 ${esc(b.travelerName)}${b.travelerEmail ? `（${esc(b.travelerEmail)}）` : ''}</div>
       ${b.dietary.length ? `<div class="notice warn small"><b>食事制限：</b>${b.dietary.map((d) => esc(DIETARY.find((x) => x.id === d)?.ja ?? d)).join('、')}</div>` : ''}
-      ${b.message ? `<div class="quote">💬 ${esc(b.message.ja || b.message.en)}${b.message.failed ? '<br><span class="small muted">（翻訳できなかったため原文のまま）</span>' : `<details class="small"><summary>原文（英語）</summary>${esc(b.message.en)}</details>`}</div>` : ''}
+      ${b.message ? `<div class="quote">💬 ${esc(b.message.ja || b.message.original)}${b.message.failed ? '<br><span class="small muted">（翻訳できなかったため原文のまま）</span>' : `<details class="small"><summary>原文（${{ en: '英語', zh: '中国語', ko: '韓国語' }[b.message.lang] ?? '外国語'}）</summary>${esc(b.message.original)}</details>`}</div>` : ''}
       <div class="btn-row">
         ${b.threadId ? `<a class="btn small" href="#/chat/${b.threadId}">💬 チャット</a>` : ''}
         ${b.status === 'confirmed' ? `<button class="btn small danger" data-cancel="${b.id}">キャンセルする</button>` : ''}
@@ -49,7 +49,7 @@ export async function renderBookings(view) {
     if (!id) return;
     const content = openSheet(`
       <h3>予約をキャンセル</h3>
-      <p class="small">理由を選んでください。理由は英語に翻訳して、お客様のマイ予約に表示されます。</p>
+      <p class="small">理由を選んでください。理由はお客様の言語（英語・中国語・韓国語）に翻訳して、マイ予約に表示されます。</p>
       <form class="form" id="cf">
         ${CANCEL_REASONS.map((r, i) => `<label class="check"><input type="radio" name="reason" value="${r.id}" ${i === 0 ? 'checked' : ''}/> ${r.ja}</label>`).join('')}
         <label>ひとこと（任意・日本語で）<input name="note" maxlength="300" placeholder="例：台風のため臨時休業します。申し訳ありません。" /></label>
@@ -71,7 +71,7 @@ export async function renderChats(view) {
   view.innerHTML = `
     <section>
       <h2>チャット</h2>
-      <p class="muted small">お客様のメッセージは日本語に翻訳されて届きます。日本語で返信すると英語に翻訳されます。</p>
+      <p class="muted small">お客様のメッセージは日本語に翻訳されて届きます。日本語で返信すると、お客様の言語（英語・中国語・韓国語）に翻訳されます。</p>
       <div class="list">${items.map((th) => `
         <a class="card" href="#/chat/${th.id}"><div class="card-body">
           <h3>${esc(th.travelerName)} ${th.unread ? `<span class="dot">${th.unread}</span>` : ''}</h3>
@@ -108,7 +108,7 @@ export async function renderThread(view, id) {
       e.preventDefault();
       if (!f.text.value.trim()) return;
       f.querySelector('button').disabled = true;
-      try { const r = await post('chat', 'send', { threadId: id, text: f.text.value }); if (r.translateFailed) toast('英語に翻訳できなかったため、日本語のまま届きます'); renderThread(view, id); }
+      try { const r = await post('chat', 'send', { threadId: id, text: f.text.value }); if (r.translateFailed) toast('翻訳できなかったため、日本語のまま届きます'); renderThread(view, id); }
       catch (er) { toast(errJa(er)); f.querySelector('button').disabled = false; }
     };
   }

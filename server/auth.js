@@ -62,6 +62,6 @@ export async function requireUser(ctx, role) {
   return user;
 }
 
-export const publicUser = (u) => u && { id: u.id, email: u.email, role: u.role, name: u.name, currency: u.currency };
+export const publicUser = (u) => u && { id: u.id, email: u.email, role: u.role, name: u.name, currency: u.currency, lang: u.lang };
 
 export const isEmail = (s) => typeof s === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 200;

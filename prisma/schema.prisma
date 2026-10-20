@@ -1,7 +1,7 @@
 // ============================================================
 //  データベース設計（仕様書：MVP縮小版）
 //  変更したら: npm run db:push（本番はデプロイ時に自動で反映）
-//  翻訳される文は Json で { ja, en }。en がないときは翻訳に失敗している。
+//  翻訳される文は Json で { ja, en, zh, ko }。訳がないときは翻訳に失敗している（en があれば英語で代わりに出す）。
 // ============================================================
 
 generator client {
@@ -26,6 +26,7 @@ model User {
   nameKana       String? // 事業者：フリガナ
   phone          String? // 事業者：運営からの連絡用（公開しない）
   currency       String    @default("USD")
+  lang           String    @default("en") // 旅行者の表示言語 en | zh | ko（チャットの翻訳先）
   termsAgreedAt  DateTime
   failedLogins   Int       @default(0)
   lockedUntil    DateTime?
@@ -88,6 +89,10 @@ model Shop {
   welcome         Json? // 店主からのひとこと { ja, en }
   tips            String[] @default([]) // 来る前に知ってほしいこと（選択式）
   tipsNote        Json? // 来る前に知ってほしいこと（自由記述）{ ja, en }
+  // ---- Jimotoを参考に追加：地元客の割合・一番人気・ITSUMO限定の特典 ----
+  localPct        Int? // 地元のお客さんの割合（0〜100・10刻み。お店の申告）
+  popular         Json? // 一番人気 { name: { ja, en, zh, ko }, priceJPY }
+  perk            Json? // ITSUMOから予約した人だけの特典 { ja, en, zh, ko }
   extra       Json? // 体験：bring{ja,en} minPeople ／ 飲食店：dietary[] menuStyle
   slots       Json // [{ time: "10:00", capacity: 6 }]
   closedDays  Int[]     @default([]) // 定休日（0=日〜6=土）

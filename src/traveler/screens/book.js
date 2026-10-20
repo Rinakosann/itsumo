@@ -5,19 +5,19 @@
 // ============================================================
 import { esc, toast, storage, store, $ } from '../../common/ui.js';
 import { get, post } from '../../common/api.js';
-import { state, loadRates } from '../state.js';
+import { state, loadRates, locale } from '../state.js';
 import { t, errText } from '../strings.js';
-import { price, rateNote, label } from '../components.js';
+import { price, rateNote, label, L } from '../components.js';
 import { isOpenDate, slotsFor } from '../../../shared/booking.js';
 import { DIETARY, LIMITS } from '../../../shared/constants.js';
 import { todayJST, addDays, weekday } from '../../../shared/time.js';
 
-const WEEK = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const fmtDate = (d) => new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`));
+const WEEK = () => Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(locale(), { weekday: 'narrow', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 0, 4 + i))));
+const fmtDate = (d) => new Intl.DateTimeFormat(locale(), { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`));
 
 export async function render(view, shopId) {
   let shop;
-  try { shop = (await get('shops', 'get', { id: shopId })).item; } catch (e) { view.innerHTML = `<p class="empty">${esc(errText(e))}</p>`; return; }
+  try { shop = (await get('shops', 'get', { id: shopId, lang: state.lang })).item; } catch (e) { view.innerHTML = `<p class="empty">${esc(errText(e))}</p>`; return; }
   await loadRates();
   const blocked = new Set(shop.blocked);
   const key = `tlm.draft.${shop.id}`;
@@ -46,10 +46,10 @@ export async function render(view, shopId) {
     return `
       <div class="cal-nav">
         <button type="button" class="btn small" data-month="-1" ${canPrev ? '' : 'disabled'}>‹</button>
-        <b>${new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${first}T12:00:00Z`))}</b>
+        <b>${new Intl.DateTimeFormat(locale(), { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${first}T12:00:00Z`))}</b>
         <button type="button" class="btn small" data-month="1" ${canNext ? '' : 'disabled'}>›</button>
       </div>
-      <div class="cal">${WEEK.map((w) => `<div class="h">${w}</div>`).join('')}${'<div></div>'.repeat(weekday(first))}${cells.join('')}</div>`;
+      <div class="cal">${WEEK().map((w) => `<div class="h">${w}</div>`).join('')}${'<div></div>'.repeat(weekday(first))}${cells.join('')}</div>`;
   }
 
   function formHtml() {
@@ -70,7 +70,7 @@ export async function render(view, shopId) {
         ${minPeople > 1 ? `<p class="note">${t('minPeople', { n: minPeople })}</p>` : ''}` : `<span class="muted small">${t('pickTime')}</span>`}
       <h4>${t('stepDetails')}</h4>
       <div class="label">${t('dietary')}</div>
-      <div class="chips">${DIETARY.map((d) => `<button type="button" class="chip ${s.dietary.includes(d.id) ? 'on' : ''}" data-diet="${d.id}">${esc(d.en)}</button>`).join('')}</div>
+      <div class="chips">${DIETARY.map((d) => `<button type="button" class="chip ${s.dietary.includes(d.id) ? 'on' : ''}" data-diet="${d.id}">${esc(L(d))}</button>`).join('')}</div>
       <label class="label" style="margin-top:10px">${t('message')}
         <textarea data-f="message" maxlength="${LIMITS.messageMaxChars}" placeholder="${esc(t('messageHint'))}">${esc(s.message)}</textarea>
         <span class="muted small" id="cnt">${t('charsLeft', { n: LIMITS.messageMaxChars - s.message.length })}</span></label>
@@ -120,7 +120,7 @@ export async function render(view, shopId) {
         $('#err').textContent = errText(err);
         e.target.disabled = false;
         if (['full', 'not_enough_seats', 'date_closed'].includes(err.code)) { // 最新の空きで選び直してもらう
-          shop = { ...shop, ...(await get('shops', 'get', { id: shop.id })).item };
+          shop = { ...shop, ...(await get('shops', 'get', { id: shop.id, lang: state.lang })).item };
           s.time = ''; s.step = 'form'; save(); setTimeout(draw, 2500);
         }
       }

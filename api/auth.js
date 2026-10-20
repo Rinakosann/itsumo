@@ -3,7 +3,7 @@ import { api, bad, str, oneOf, rateLimit } from '../server/http.js';
 import { prisma } from '../server/db.js';
 import { hashPassword, verifyPassword, startSession, endSession, currentUser, requireUser, publicUser, isEmail, randomToken, sha256 } from '../server/auth.js';
 import { sendEmail } from '../server/email.js';
-import { CURRENCIES, LIMITS } from '../shared/constants.js';
+import { CURRENCIES, LIMITS, LANG_IDS } from '../shared/constants.js';
 import { todayJST } from '../shared/time.js';
 
 const password = (v) => {
@@ -40,6 +40,7 @@ export default api({
       data: {
         email, name, role, nameKana, phone, passwordHash: await hashPassword(password(ctx.body.password)), termsAgreedAt: new Date(),
         currency: CURRENCIES.includes(ctx.body.currency) ? ctx.body.currency : 'USD',
+        lang: LANG_IDS.includes(ctx.body.lang) ? ctx.body.lang : 'en',
       },
     });
     await startSession(ctx, user.id);
@@ -113,6 +114,7 @@ export default api({
     const data = {};
     if (ctx.body.name !== undefined) data.name = str(ctx.body.name, { max: 60, required: true, name: 'name' });
     if (ctx.body.currency) data.currency = oneOf(ctx.body.currency, CURRENCIES, 'currency');
+    if (ctx.body.lang) data.lang = oneOf(ctx.body.lang, LANG_IDS, 'lang');
     return { user: publicUser(await prisma.user.update({ where: { id: user.id }, data })) };
   },
 

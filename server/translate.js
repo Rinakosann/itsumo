@@ -1,15 +1,17 @@
 // ============================================================
-//  翻訳（日本語 ⇔ 英語）。プロバイダを差し替えられる。
+//  翻訳（日本語 ⇔ 英語・中国語（簡体字）・韓国語）。プロバイダを差し替えられる。
 //  TRANSLATION_PROVIDER = mymemory（無料の機械翻訳・当面）| claude（AI翻訳・ANTHROPIC_API_KEY が必要）
 //  失敗したら null を返す → 画面では原文を出し「翻訳できませんでした」と示す。
 // ============================================================
 import Anthropic from '@anthropic-ai/sdk';
+import { LANGS } from '../shared/constants.js';
 
-const NAMES = { ja: 'Japanese', en: 'English' };
+const NAMES = { ja: 'Japanese', en: 'English', zh: 'Simplified Chinese', ko: 'Korean' };
+const MM = { ja: 'ja', ...Object.fromEntries(LANGS.map((l) => [l.id, l.mm])) };
 
 async function mymemory(text, from, to) {
   const email = process.env.MYMEMORY_EMAIL ? `&de=${encodeURIComponent(process.env.MYMEMORY_EMAIL)}` : '';
-  const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}${email}`, { signal: AbortSignal.timeout(8000) });
+  const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${MM[from] ?? from}|${MM[to] ?? to}${email}`, { signal: AbortSignal.timeout(8000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   const out = data?.responseData?.translatedText;
@@ -65,7 +67,13 @@ export async function translate(text, from, to) {
   }
 }
 
-/** 日本語 → { ja, en }（en が null なら翻訳失敗） */
-export async function jaToEn(ja) {
-  return { ja, en: ja ? await translate(ja, 'ja', 'en') : '' };
+/** 日本語 → { ja, en, zh, ko }（null の言語は翻訳失敗。画面では英語→原文の順で代わりに出す） */
+export async function jaToAll(ja) {
+  if (!ja) return { ja: '', en: '', zh: '', ko: '' };
+  const out = await Promise.all(LANGS.map((l) => translate(ja, 'ja', l.id)));
+  return { ja, ...Object.fromEntries(LANGS.map((l, i) => [l.id, out[i]])) };
 }
+export const jaToEn = jaToAll; // 旧名（互換のため）
+
+/** すべての言語の訳がそろっているか */
+export const fullyTranslated = (o) => Boolean(o?.ja) && LANGS.every((l) => o[l.id]);

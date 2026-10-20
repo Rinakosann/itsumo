@@ -3,10 +3,10 @@ import { api, bad, notFound, str, oneOf, isDate } from '../server/http.js';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../server/db.js';
 import { requireUser } from '../server/auth.js';
-import { jaToEn } from '../server/translate.js';
+import { jaToAll, fullyTranslated } from '../server/translate.js';
 import { geocodeJa } from '../server/geo.js';
 import { isPast } from '../shared/booking.js';
-import { AREAS, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, CANCEL_REASONS, LIMITS, TIPS } from '../shared/constants.js';
+import { AREAS, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, CANCEL_REASONS, LIMITS, TIPS, LOCAL_PCTS } from '../shared/constants.js';
 import { todayJST, addDays } from '../shared/time.js';
 
 const biz = (ctx) => requireUser(ctx, 'business');
@@ -67,11 +67,16 @@ function readShop(b) {
       welcomeJa: str(b.welcome, { max: 100 }),
       tips: (Array.isArray(b.tips) ? b.tips : []).filter((x) => ids(TIPS).includes(x)),
       tipsNoteJa: str(b.tipsNote, { max: 200 }),
+      // Jimotoを参考に追加（任意）：地元客の割合・一番人気・ITSUMO限定の特典
+      localPct: LOCAL_PCTS.includes(num(b.localPct)) ? num(b.localPct) : null,
+      popularJa: str(b.popularName, { max: 40 }),
+      popularPrice: num(b.popularPrice) != null && num(b.popularPrice) >= 0 && num(b.popularPrice) <= 1_000_000 ? Math.round(num(b.popularPrice)) : null,
+      perkJa: str(b.perk, { max: 100 }),
     },
   };
 }
 
-const keep = (prev, ja) => (prev?.ja === ja && prev?.en ? prev : null); // 変わっていなければ翻訳し直さない
+const keep = (prev, ja) => (prev?.ja === ja && fullyTranslated(prev) ? prev : null); // 変わっていなければ翻訳し直さない
 
 export default api({
   /** 新着の数（画面の新着表示・未読バッジ） */
@@ -96,7 +101,7 @@ export default api({
   },
 
   /**
-   * 保存。必須項目がそろっていれば即公開（英語に自動翻訳）。足りなければ下書き。
+   * 保存。必須項目がそろっていれば即公開（英語・中国語・韓国語に自動翻訳）。足りなければ下書き。
    * publish=false なら下書きのまま保存。
    */
   async 'POST shop-save'(ctx) {
@@ -105,11 +110,15 @@ export default api({
     const { data: v, missing } = readShop(ctx.body.shop ?? {});
     const wantPublish = ctx.body.publish !== false;
 
-    const name = keep(prev?.name, v.nameJa) ?? (v.nameJa ? await jaToEn(v.nameJa) : { ja: '' });
-    const description = keep(prev?.description, v.descriptionJa) ?? (v.descriptionJa ? await jaToEn(v.descriptionJa) : { ja: '' });
-    const bring = v.bringJa ? keep(prev?.extra?.bring, v.bringJa) ?? (await jaToEn(v.bringJa)) : null;
-    const tr = async (field, ja) => (ja ? keep(prev?.[field], ja) ?? (await jaToEn(ja)) : null);
-    const [localsOrder, welcome, tipsNote] = await Promise.all([tr('localsOrder', v.localsOrderJa), tr('welcome', v.welcomeJa), tr('tipsNote', v.tipsNoteJa)]);
+    // 英語・中国語・韓国語に自動翻訳（変わっていない文は訳し直さない）
+    const tr = async (prevVal, ja) => (ja ? keep(prevVal, ja) ?? (await jaToAll(ja)) : null);
+    const [name0, description0, bring, localsOrder, welcome, tipsNote, popularName, perk] = await Promise.all([
+      tr(prev?.name, v.nameJa), tr(prev?.description, v.descriptionJa), tr(prev?.extra?.bring, v.bringJa),
+      tr(prev?.localsOrder, v.localsOrderJa), tr(prev?.welcome, v.welcomeJa), tr(prev?.tipsNote, v.tipsNoteJa),
+      tr(prev?.popular?.name, v.popularJa), tr(prev?.perk, v.perkJa),
+    ]);
+    const name = name0 ?? { ja: '' };
+    const description = description0 ?? { ja: '' };
     // 住所が未確認なら、保存のときにサーバーでも確認する（押し忘れても公開が止まらないように）
     if (!v.addressVerified && v.address) {
       const hit = await geocodeJa(v.address);
@@ -129,13 +138,14 @@ export default api({
         : { bring, minPeople: v.minPeople },
       slots: v.slots, closedDays: v.closedDays, cutoff: v.cutoff,
       localsOrder: localsOrder ?? Prisma.DbNull, notInGuidebooks: v.notInGuidebooks, welcome: welcome ?? Prisma.DbNull, tips: v.tips, tipsNote: tipsNote ?? Prisma.DbNull,
+      localPct: v.localPct, popular: popularName ? { name: popularName, priceJPY: v.popularPrice } : Prisma.DbNull, perk: perk ?? Prisma.DbNull,
       status: publish ? 'published' : prev?.status === 'hidden' ? 'hidden' : 'draft',
       ...(publish && !prev?.publishedAt ? { publishedAt: new Date() } : {}),
     };
     const saved = prev
       ? await prisma.shop.update({ where: { id: prev.id }, data })
       : await prisma.shop.create({ data: { ...data, ownerId: user.id } });
-    const translateFailed = [name, description, bring, localsOrder, welcome, tipsNote].some((o) => o && o.ja && !o.en);
+    const translateFailed = [name, description, bring, localsOrder, welcome, tipsNote, popularName, perk].some((o) => o && o.ja && !fullyTranslated(o));
     return { id: saved.id, status: saved.status, missing: wantPublish ? missing : [], translateFailed };
   },
 
@@ -186,7 +196,7 @@ export default api({
     const items = rows.map((b) => ({
       id: b.id, shopId: b.shopId, shopName: b.shop.name.ja, date: b.date, time: b.time, people: b.people, dietary: b.dietary,
       travelerName: b.traveler.deletedAt ? '退会したユーザー' : b.traveler.name, travelerEmail: b.traveler.deletedAt ? null : b.traveler.email,
-      message: b.message ? { ja: b.message.ja, en: b.message.en, failed: !b.message.ja } : null,
+      message: b.message ? { ja: b.message.ja, original: b.message[b.message.lang ?? 'en'], lang: b.message.lang ?? 'en', failed: !b.message.ja } : null,
       status: b.status === 'confirmed' && isPast(b) ? 'completed' : b.status,
       cancelReason: b.cancelReason, isNew: !b.seenByBusiness, isNewCancel: !b.seenCancelByBusiness, createdAt: b.createdAt,
       travelerId: b.travelerId,
@@ -207,7 +217,7 @@ export default api({
     const note = str(ctx.body.note, { max: 300 });
     await prisma.booking.update({
       where: { id: b.id },
-      data: { status: 'cancelled_business', cancelReason: reason, cancelNote: note ? await jaToEn(note) : undefined, cancelledAt: new Date() },
+      data: { status: 'cancelled_business', cancelReason: reason, cancelNote: note ? await jaToAll(note) : undefined, cancelledAt: new Date() },
     });
     return { ok: true };
   },

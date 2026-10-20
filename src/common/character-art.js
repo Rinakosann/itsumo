@@ -53,8 +53,47 @@ export const AVATAR = `
   <path d="M26 40q3 4 6 0q3 4 6 0" stroke="${C.mouth}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
 
-/** 全身（160×180）：ちび体型。片手をふって、片手に地図アプリのスマホ */
-export const FULL = `
+const SHURIKEN = (x, y, r, cls = '') => `
+  <g transform="translate(${x} ${y})"><g class="${cls}">
+    <path d="M0 ${-r}L${r * 0.28} ${-r * 0.28}L${r} 0L${r * 0.28} ${r * 0.28}L0 ${r}L${-r * 0.28} ${r * 0.28}L${-r} 0L${-r * 0.28} ${-r * 0.28}Z" fill="#cfd6e6" stroke="#4a5470" stroke-width="${r * 0.1}" stroke-linejoin="round"/>
+    <circle r="${r * 0.22}" fill="#4a5470"/>
+  </g></g>`;
+
+/** 持ち物ごとの腕 */
+const HANDS = {
+  phone: `<!-- スマホを持つ腕 -->
+  <path d="M110 132q14 2 24-6" stroke="${C.body}" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <g transform="translate(10 14) rotate(-8 132 106)">
+    <rect x="122" y="90" width="20" height="32" rx="5" fill="#33405c" stroke="${C.line}" stroke-width="1.8"/>
+    <rect x="125" y="94" width="14" height="23" rx="2" fill="#e6f7e9"/>
+    <path d="M129 103q0-4 3-4t3 4q0 2-3 6q-3-4-3-6z" fill="#ff6b6b"/>
+  </g>
+  <circle cx="137" cy="128" r="8" fill="${C.body}" stroke="${C.line}" stroke-width="2"/>`,
+  lantern: `<!-- ちょうちんを持つ腕 -->
+  <path d="M110 132q14 2 22-10" stroke="${C.body}" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <g transform="translate(118 64) scale(.42)">${lantern('', { id: 'kero' }).replace(/<\/?svg[^>]*>/g, '')}</g>
+  <circle cx="134" cy="121" r="8" fill="${C.body}" stroke="${C.line}" stroke-width="2"/>`,
+  shuriken: `<!-- 手裏剣を持つ腕 -->
+  <path d="M110 132q14 2 22-10" stroke="${C.body}" stroke-width="12" fill="none" stroke-linecap="round"/>
+  ${SHURIKEN(140, 106, 13, 'spin')}
+  <circle cx="134" cy="121" r="8" fill="${C.body}" stroke="${C.line}" stroke-width="2"/>`,
+};
+
+/** 忍者のはちまき（額当てつき・結び目の布が風になびく） */
+const NINJA_BAND = `
+  <path d="M30 70q-16-2-26-14q12 4 22 2z" fill="#2b3a67"/><path d="M30 74q-14 4-26 0q12-2 22-6z" fill="#34477d"/>
+  <path d="M24 60Q80 76 136 60L136 72Q80 88 24 72Z" fill="#2b3a67" stroke="#1c2648" stroke-width="1.6" stroke-linejoin="round"/>
+  <rect x="70" y="64" width="20" height="13" rx="3" fill="#cfd6e6" stroke="#4a5470" stroke-width="1.4"/>
+  <path d="M80 67q-4 3 0 7q4-4 0-7z" fill="#4a5470"/>`;
+
+/** 忍者の首巻き */
+const NINJA_SCARF = `<!-- 忍者の首巻き -->
+  <path d="M48 110q32 14 64 0l-1 10q-31 10-62 0z" fill="#2b3a67" stroke="#1c2648" stroke-width="1.4"/>
+  <path d="M100 118l10 16l-8 1z" fill="#34477d" stroke="#1c2648" stroke-width="1.2" stroke-linejoin="round"/>`;
+
+/** 全身（160×180）：ちび体型。片手をふって、もう片方の手に hand（phone | lantern | shuriken）。ninja で忍者の格好 */
+function frogFull({ hand = 'phone', ninja = false } = {}) {
+  return `
 <svg viewBox="0 0 160 180" aria-hidden="true">
   <!-- 足 -->
   <ellipse cx="60" cy="166" rx="15" ry="8" fill="${C.body}" stroke="${C.line}" stroke-width="2"/>
@@ -71,17 +110,11 @@ export const FULL = `
   <path d="M50 128q-12-4-16-18" stroke="${C.line}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".35"/>
   <circle cx="33" cy="106" r="8.5" fill="${C.body}" stroke="${C.line}" stroke-width="2"/>
   <path d="M20 94q-3 4 0 8M15 97q-2 3 0 6" stroke="${C.line}" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".6"/>
-  <!-- スマホを持つ腕 -->
-  <path d="M110 132q14 2 24-6" stroke="${C.body}" stroke-width="12" fill="none" stroke-linecap="round"/>
-  <g transform="translate(10 14) rotate(-8 132 106)">
-    <rect x="122" y="90" width="20" height="32" rx="5" fill="#33405c" stroke="${C.line}" stroke-width="1.8"/>
-    <rect x="125" y="94" width="14" height="23" rx="2" fill="#e6f7e9"/>
-    <path d="M129 103q0-4 3-4t3 4q0 2-3 6q-3-4-3-6z" fill="#ff6b6b"/>
-  </g>
-  <circle cx="137" cy="128" r="8" fill="${C.body}" stroke="${C.line}" stroke-width="2"/>
+  ${HANDS[hand]}
   <!-- 大きな頭 -->
   <ellipse cx="80" cy="76" rx="58" ry="42" fill="${C.body}" stroke="${C.line}" stroke-width="2"/>
   <ellipse cx="80" cy="66" rx="40" ry="18" fill="${C.bodyLight}" opacity=".5"/>
+  ${ninja ? NINJA_BAND : ''}
   ${EYE(52, 42, 22)}
   ${EYE(108, 42, 22)}
   ${LEAF(80, 30, 1.05)}
@@ -90,10 +123,16 @@ export const FULL = `
   <ellipse cx="122" cy="86" rx="11" ry="6.5" fill="${C.cheek}" opacity=".85"/>
   <path d="M68 86q6 7 12 0q6 7 12 0" stroke="${C.mouth}" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M75 90q5 6 10 0" fill="${C.tongue}"/>
-  <!-- ちいさなスカーフ -->
+  ${ninja ? NINJA_SCARF : `  <!-- ちいさなスカーフ -->
   <path d="M50 112q30 12 60 0l-1 7q-29 9-58 0z" fill="${C.scarf}" stroke="${C.scarfLine}" stroke-width="1.4"/>
-  <circle cx="64" cy="117" r="1.6" fill="${C.leaf}"/><circle cx="80" cy="119" r="1.6" fill="${C.leaf}"/><circle cx="96" cy="117" r="1.6" fill="${C.leaf}"/>
+  <circle cx="64" cy="117" r="1.6" fill="${C.leaf}"/><circle cx="80" cy="119" r="1.6" fill="${C.leaf}"/><circle cx="96" cy="117" r="1.6" fill="${C.leaf}"/>`}
 </svg>`;
+}
+
+
+export const FULL = frogFull({ hand: 'phone' });
+/** ケロ（忍者）：はちまきと首巻き、手に手裏剣（回る） */
+export const FULL_NINJA = frogFull({ hand: 'shuriken', ninja: true });
 
 // ============================================================
 //  もう一つの案：湯呑みの「ゆのみん」（仮）。抹茶色の湯呑みから湯気、お茶には茶柱（縁起物）。
@@ -201,8 +240,57 @@ export function lantern(char = '', { id = 'l', color = '#e8452f' } = {}) {
 }
 
 /** ケロ（夜の街）：スマホの代わりに、ちょうちんを持つ */
-export const FULL_LANTERN = FULL
-  .replace(/<!-- スマホを持つ腕 -->[\s\S]*?<circle cx="137" cy="128"[^>]*\/>/, `<!-- ちょうちんを持つ腕 -->
-  <path d="M110 132q14 2 22-10" stroke="${'#7fd98d'}" stroke-width="12" fill="none" stroke-linecap="round"/>
-  <g transform="translate(118 64) scale(.42)">${lantern('', { id: 'kero' }).replace(/<\/?svg[^>]*>/g, '')}</g>
-  <circle cx="134" cy="121" r="8" fill="#7fd98d" stroke="#3f8a52" stroke-width="2"/>`);
+export const FULL_LANTERN = frogFull({ hand: 'lantern' });
+
+/** 顔まわり（忍者）：はちまきつき */
+export const AVATAR_NINJA = AVATAR.replace(`${EYE(18, 23, 10.5)}`, `
+  <path d="M8 36q-7 1-8-6q4 3 8 2z" fill="#2b3a67"/>
+  <path d="M5 30Q32 40 59 30L59 36Q32 46 5 36Z" fill="#2b3a67" stroke="#1c2648" stroke-width="1"/>
+  <rect x="27" y="32" width="10" height="7" rx="1.5" fill="#cfd6e6" stroke="#4a5470" stroke-width=".8"/>
+  ${EYE(18, 23, 10.5)}`);
+
+export { SHURIKEN };
+
+// ============================================================
+//  日本らしさ：夜の富士山・お寿司（回転寿司のお皿）
+// ============================================================
+
+/** 夜の富士山（横長・下に置く背景用）。fit = slice（はみ出して埋める）| meet（全体を見せる） */
+export const fuji = (fit = 'slice') => `
+<svg viewBox="0 0 400 140" preserveAspectRatio="xMidYMax ${fit}" class="fuji-svg" aria-hidden="true">
+  <defs>
+    <linearGradient id="fj-m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a4785"/><stop offset="1" stop-color="#161c3c"/></linearGradient>
+    <linearGradient id="fj-s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c9d3f2"/></linearGradient>
+  </defs>
+  <path d="M0 140L0 118Q60 104 110 112L170 46Q200 30 230 46L290 112Q340 104 400 116L400 140Z" fill="url(#fj-m)"/>
+  <path d="M170 46Q200 30 230 46L250 68Q240 62 232 70Q222 60 212 72Q202 62 192 72Q182 62 172 70Q160 62 150 68Z" fill="url(#fj-s)"/>
+  <path d="M0 140L0 128Q100 116 200 126Q300 116 400 128L400 140Z" fill="#10152e"/>
+</svg>`;
+export const FUJI = fuji('slice');
+
+/** お月さま */
+export const MOON = `<svg viewBox="0 0 40 40" class="moon-svg" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="#fff4cf"/><circle cx="14" cy="16" r="3" fill="#f1e2b0"/><circle cx="25" cy="25" r="2.2" fill="#f1e2b0"/></svg>`;
+
+const NETA = {
+  maguro: { fish: '#e8475a', line: '#ff8090' },
+  salmon: { fish: '#ff9a62', line: '#ffe2cf' },
+  tamago: { fish: '#ffd84a', line: '#f2b92a', nori: true },
+  ebi: { fish: '#ff7b54', line: '#fff0e6', tail: true },
+};
+
+/** お寿司1皿（回転寿司のお皿つき）。kind = maguro | salmon | tamago | ebi | ikura */
+export function sushi(kind = 'maguro', plate = '#e0e6f5') {
+  const n = NETA[kind];
+  const top = kind === 'ikura'
+    ? `<rect x="18" y="12" width="28" height="18" rx="4" fill="#1f2d24"/><g fill="#ff7a1a" stroke="#c94f00" stroke-width=".6">${[[23, 12], [29, 10], [35, 12], [41, 10], [26, 15], [38, 15], [32, 14]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.2"/>`).join('')}</g>`
+    : `<rect x="16" y="17" width="32" height="13" rx="6" fill="#fffaf0" stroke="#e8dcc6" stroke-width="1"/>
+       <path d="M12 19q20-14 40 0q-2 5-20 4q-18 1-20-4z" fill="${n.fish}"/>
+       <path d="M20 15l5 5M29 13l4 6M38 14l3 5" stroke="${n.line}" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>
+       ${n.nori ? '<rect x="28" y="13" width="8" height="17" fill="#1f2d24"/>' : ''}
+       ${n.tail ? '<path d="M52 18l8-6l-2 9z" fill="#ff5a3a"/>' : ''}`;
+  return `<svg viewBox="0 0 64 40" class="sushi-svg" aria-hidden="true">
+  <ellipse cx="32" cy="32" rx="30" ry="7" fill="${plate}" stroke="#9aa6c8" stroke-width="1.2"/>
+  <ellipse cx="32" cy="31" rx="20" ry="4" fill="none" stroke="#9aa6c8" stroke-width="1" opacity=".7"/>
+  ${top}
+</svg>`;
+}

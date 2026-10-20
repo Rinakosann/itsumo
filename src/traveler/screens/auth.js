@@ -57,7 +57,7 @@ export function renderRegister(view) {
     if (!f.agree.checked) { err.textContent = t('err_terms_required'); return; }
     const btn = f.querySelector('button[type=submit]'); btn.disabled = true;
     try {
-      await post('auth', 'register', { role: 'traveler', name: f.name.value, email: f.email.value, password: f.password.value, termsAgreed: true, currency: state.currency });
+      await post('auth', 'register', { role: 'traveler', name: f.name.value, email: f.email.value, password: f.password.value, termsAgreed: true, currency: state.currency, lang: state.lang });
       await done();
     } catch (er) { err.textContent = errText(er); btn.disabled = false; }
   };

@@ -2,13 +2,13 @@
 import { esc, toast } from '../../common/ui.js';
 import { get, post } from '../../common/api.js';
 import { googleMapsLink } from '../../common/maps.js';
-import { loadRates, state } from '../state.js';
-import { AVATAR } from '../../common/character-art.js';
+import { loadRates, state, locale } from '../state.js';
+import { AVATAR_NINJA, FULL_NINJA } from '../../common/character-art.js';
 import { t, errText } from '../strings.js';
 import { price, rateNote, label, tipsHtml, phrasesHtml } from '../components.js';
 import { DIETARY, CANCEL_REASONS } from '../../../shared/constants.js';
 
-const fmtDate = (d) => new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`));
+const fmtDate = (d) => new Intl.DateTimeFormat(locale(), { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`));
 const badge = (st) => `<span class="badge ${st === 'confirmed' ? 'ok' : st === 'completed' ? '' : 'muted'}">${t(`st_${st}`)}</span>`;
 
 export async function renderList(view) {
@@ -25,7 +25,7 @@ export async function renderList(view) {
     <section>
       <h2>${t('bookingsTitle')}</h2>
       <div class="list">${upcoming.map(card).join('') || `<p class="empty">${t('noBookings')}</p>`}</div>
-      ${others.length ? `<details><summary>History (${others.length})</summary><div class="list">${others.map(card).join('')}</div></details>` : ''}
+      ${others.length ? `<details><summary>${t('history')} (${others.length})</summary><div class="list">${others.map(card).join('')}</div></details>` : ''}
     </section>`;
 }
 
@@ -37,12 +37,13 @@ export async function renderOne(view, id) {
   view.innerHTML = `
     <section>
       <a class="back" href="#/bookings">← ${t('bookingsTitle')}</a>
-      ${b.status === 'confirmed' ? `<div class="celebrate">🎉</div><h2>${t('confirmed')}</h2>
-        <div class="greet"><div class="char-avatar">${AVATAR}</div><p>${esc(t('keroConfirmed'))}</p></div>` : `<h2>${esc(s.name.text)}</h2>`}
+      ${b.status === 'confirmed' ? `<div class="mission"><div class="mission-kero">${FULL_NINJA}</div><div class="shuriken-burst" aria-hidden="true">${'<span>✦</span>'.repeat(6)}</div></div><h2>${t('confirmed')}</h2>
+        <div class="greet"><div class="char-avatar">${AVATAR_NINJA}</div><p>${esc(t('keroConfirmed'))}</p></div>` : `<h2>${esc(s.name.text)}</h2>`}
+      ${['confirmed', 'completed'].includes(b.status) && s.perk?.text ? `<div class="perk-box"><b>${t('perkTitle')}</b><p>${esc(s.perk.text)}</p><p class="small">${t('perkShow')}</p></div>` : ''}
       <div class="tags">${badge(b.status)}</div>
       ${b.status === 'cancelled_business' ? `<p class="notice warn">${esc(t('shopCancelReason', { r: [label(CANCEL_REASONS, b.cancelReason), b.cancelNote?.text].filter(Boolean).join(' — ') }))}</p>` : ''}
       <div class="section kv">
-        <div class="wide"><b>Shop</b>${esc(s.name.text)}</div>
+        <div class="wide"><b>${t('shop')}</b>${esc(s.name.text)}</div>
         <div class="wide"><b>${t('when')}</b>${esc(fmtDate(b.date))} ${b.time}</div>
         <div><b>${t('people')}</b>${b.people}</div>
         <div><b>${t('duration')}</b>${t('minutes', { n: s.durationMin })}</div>

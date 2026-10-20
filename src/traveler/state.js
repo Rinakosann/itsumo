@@ -1,16 +1,22 @@
 // 旅行者画面の状態
-import { get } from '../common/api.js';
+import { get, post } from '../common/api.js';
 import { storage, store } from '../common/ui.js';
 import { setMapsConfig } from '../common/maps.js';
-import { CURRENCIES } from '../../shared/constants.js';
+import { CURRENCIES, LANGS, LANG_IDS } from '../../shared/constants.js';
 
 function guessCurrency() {
   const region = (navigator.language || '').split('-')[1]?.toUpperCase();
   return { SG: 'SGD', US: 'USD', CN: 'CNY', HK: 'HKD', TW: 'TWD', KR: 'KRW', DE: 'EUR', FR: 'EUR', ES: 'EUR', IT: 'EUR' }[region] ?? 'USD';
 }
 
+function guessLang() {
+  const l = (navigator.language || '').toLowerCase();
+  return l.startsWith('zh') ? 'zh' : l.startsWith('ko') ? 'ko' : 'en';
+}
+
 export const state = {
   user: null,
+  lang: LANG_IDS.includes(storage('tlm.lang', null)) ? storage('tlm.lang', null) : guessLang(),
   currency: storage('tlm.currency', null), // null = まだ選んでいない（初回に選ぶ）
   rates: null,
   shops: null,
@@ -30,12 +36,24 @@ export function setCurrency(c) {
 }
 export const saveFilters = () => store('tlm.filters', state.filters);
 
+/** 表示言語を変える（お店の文は日本語から自動翻訳されたものに切り替わる） */
+export function setLang(l) {
+  if (!LANG_IDS.includes(l)) return;
+  state.lang = l;
+  state.shops = null;
+  store('tlm.lang', l);
+  document.documentElement.lang = LANGS.find((x) => x.id === l).locale;
+}
+/** 日付の書式に使う言語 */
+export const locale = () => LANGS.find((x) => x.id === state.lang)?.locale ?? 'en';
+
 export async function refreshMe() {
   const me = await get('auth', 'me');
   state.user = me.user?.role === 'traveler' ? me.user : null;
   state.otherRole = me.user && me.user.role !== 'traveler';
   setMapsConfig(me.maps ?? {});
   if (state.user?.currency && !state.currency) setCurrency(state.user.currency);
+  if (state.user && state.user.lang !== state.lang) post('auth', 'profile', { lang: state.lang }).catch(() => {}); // チャットの翻訳先をそろえる
   return me;
 }
 
@@ -46,6 +64,6 @@ export async function loadRates() {
 }
 
 export async function loadShops(force) {
-  if (!state.shops || force) state.shops = (await get('shops', 'list')).items;
+  if (!state.shops || force) state.shops = (await get('shops', 'list', { lang: state.lang })).items;
   return state.shops;
 }

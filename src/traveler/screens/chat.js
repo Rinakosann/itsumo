@@ -2,9 +2,10 @@
 import { esc, toast } from '../../common/ui.js';
 import { get, post } from '../../common/api.js';
 import { t, errText } from '../strings.js';
+import { state, locale } from '../state.js';
 import { LIMITS } from '../../../shared/constants.js';
 
-const fmt = (iso) => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' }).format(new Date(iso));
+const fmt = (iso) => new Intl.DateTimeFormat(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' }).format(new Date(iso));
 
 export async function renderList(view) {
   const { items } = await get('chat', 'threads');
@@ -27,7 +28,7 @@ export async function renderThread(view, id, query) {
     try { ({ thread, messages } = await get('chat', 'thread', { id })); } catch (e) { view.innerHTML = `<p class="empty">${esc(errText(e))}</p>`; return; }
     document.dispatchEvent(new CustomEvent('badges-changed'));
   } else {
-    const shop = await get('shops', 'get', { id: query.get('shop') }).then((r) => r.item).catch(() => null);
+    const shop = await get('shops', 'get', { id: query.get('shop'), lang: state.lang }).then((r) => r.item).catch(() => null);
     if (!shop) { view.innerHTML = `<p class="empty">${t('err_not_found')}</p>`; return; }
     const existing = (await get('chat', 'threads')).items.find((x) => x.shopId === shop.id);
     if (existing) { location.replace(`#/chat/${existing.id}`); return; }

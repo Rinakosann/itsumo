@@ -7,14 +7,14 @@ import { LIMITS } from '../shared/constants.js';
 
 /** ログイン中の人が見てよいスレッドか */
 async function threadFor(user, id) {
-  const th = await prisma.thread.findUnique({ where: { id }, include: { shop: true, traveler: { select: { name: true, deletedAt: true } } } });
+  const th = await prisma.thread.findUnique({ where: { id }, include: { shop: true, traveler: { select: { name: true, deletedAt: true, lang: true } } } });
   if (!th) throw notFound();
   if (user.role === 'traveler' && th.travelerId !== user.id) throw notFound();
   if (user.role === 'business' && th.shop.ownerId !== user.id) throw notFound();
   return th;
 }
 
-const shopName = (s, role) => (role === 'business' ? s.name.ja : s.name.en || s.name.ja);
+const shopName = (s, user) => (user.role === 'business' ? s.name.ja : s.name[user.lang] || s.name.en || s.name.ja);
 
 export default api({
   async 'GET threads'(ctx) {
@@ -32,7 +32,7 @@ export default api({
         const m = t.messages[0];
         const mine = m && m.sender === user.role;
         return {
-          id: t.id, shopId: t.shopId, shopName: shopName(t.shop, user.role), travelerName: t.traveler.name, updatedAt: t.updatedAt,
+          id: t.id, shopId: t.shopId, shopName: shopName(t.shop, user), travelerName: t.traveler.name, updatedAt: t.updatedAt,
           unread: unread[t.id] ?? 0, last: m ? (mine ? m.text : m.translated ?? m.text) : '',
         };
       }),
@@ -45,7 +45,7 @@ export default api({
     await prisma.message.updateMany({ where: { threadId: th.id }, data: user.role === 'business' ? { readByBusiness: true } : { readByTraveler: true } });
     const msgs = await prisma.message.findMany({ where: { threadId: th.id }, orderBy: { createdAt: 'asc' } });
     return {
-      thread: { id: th.id, shopId: th.shopId, shopName: shopName(th.shop, user.role), travelerName: th.traveler.name, blocked: th.blockedByBusiness, travelerDeleted: Boolean(th.traveler.deletedAt) },
+      thread: { id: th.id, shopId: th.shopId, shopName: shopName(th.shop, user), travelerName: th.traveler.name, blocked: th.blockedByBusiness, travelerDeleted: Boolean(th.traveler.deletedAt) },
       messages: msgs.map((m) => {
         const mine = m.sender === user.role;
         return {
@@ -67,13 +67,14 @@ export default api({
       if (!shop) throw notFound();
       th = await prisma.thread.upsert({
         where: { shopId_travelerId: { shopId: shop.id, travelerId: user.id } },
-        create: { shopId: shop.id, travelerId: user.id }, update: {}, include: { shop: true, traveler: { select: { name: true, deletedAt: true } } },
+        create: { shopId: shop.id, travelerId: user.id }, update: {}, include: { shop: true, traveler: { select: { name: true, deletedAt: true, lang: true } } },
       });
     } else {
       th = await threadFor(user, String(ctx.body.threadId ?? ''));
     }
     if (th.blockedByBusiness && user.role === 'traveler') throw bad('blocked');
-    const [from, to] = user.role === 'traveler' ? ['en', 'ja'] : ['ja', 'en'];
+    const tlang = th.traveler.lang ?? 'en'; // 旅行者の言語 ⇔ 日本語
+    const [from, to] = user.role === 'traveler' ? [user.lang ?? 'en', 'ja'] : ['ja', tlang];
     const translated = await translate(text, from, to);
     await prisma.message.create({
       data: { threadId: th.id, sender: user.role, text, translated, readByTraveler: user.role === 'traveler', readByBusiness: user.role === 'business' },

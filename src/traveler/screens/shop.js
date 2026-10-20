@@ -3,35 +3,43 @@ import { esc, toast, setReturnTo } from '../../common/ui.js';
 import { get, post } from '../../common/api.js';
 import { makeMap, mapsEnabled, googleMapsLink } from '../../common/maps.js';
 import { state, loadRates } from '../state.js';
+import { store } from '../../common/ui.js';
+import { marksFor } from '../../../shared/booking.js';
 import { t, errText } from '../strings.js';
-import { price, rateNote, stationText, translated, handleOriginal, label, paymentText, tipsHtml, phrasesHtml } from '../components.js';
+import { price, rateNote, stationText, translated, handleOriginal, label, paymentText, tipsHtml, phrasesHtml, weekStrip, localBar, L, yen } from '../components.js';
 import { areaOf, CATEGORIES, CUSTOMERS, YEARS, DIETARY, MENU_STYLES, CUTOFFS } from '../../../shared/constants.js';
 
 export async function render(view, id) {
   let s;
-  try { s = (await get('shops', 'get', { id })).item; } catch (e) { view.innerHTML = `<p class="empty">${esc(errText(e))}</p><a class="btn block" href="#/">${t('back')}</a>`; return; }
+  try { s = (await get('shops', 'get', { id, lang: state.lang })).item; } catch (e) { view.innerHTML = `<p class="empty">${esc(errText(e))}</p><a class="btn block" href="#/">${t('back')}</a>`; return; }
   await loadRates();
   post('shops', 'view', { shopId: s.id, visitorId: state.visitorId }).catch(() => {}); // 閲覧の記録（成功指標）
   const a = areaOf(s.area);
   const x = s.extra ?? {};
   const canBook = s.slots.length > 0;
+  const week = marksFor(s, 14); // 2週間分の空き（〇△✕）
 
   view.innerHTML = `
     <section class="detail">
       <a class="back" href="#/">← ${t('back')}</a>
       ${s.isDemo ? `<p class="notice warn small"><span class="demo-tag">${t('demoTag')}</span> ${t('demoNote')}</p>` : ''}
       <h2>${translated(s.name)}</h2>
-      <p class="sub">${esc(label(CATEGORIES, s.category))} · ${esc(a?.en ?? '')}</p>
+      <p class="sub">${esc(label(CATEGORIES, s.category))} · ${esc(L(a))}</p>
       <div class="facts">
         ${s.notInGuidebooks ? `<span class="fact special">📖 ${t('notInGuidebooks')}</span>` : ''}
         ${s.firstGuests ? `<span class="fact first">✨ ${t('firstGuests')}</span>` : ''}
-        <span class="fact">👥 ${t('customers')}: ${esc(label(CUSTOMERS, s.customers))}</span>
+        ${s.localPct == null ? `<span class="fact">👥 ${t('customers')}: ${esc(label(CUSTOMERS, s.customers))}</span>` : ''}
         <span class="fact">🏮 ${t('years')}: ${esc(label(YEARS, s.years))}</span>
         <span class="fact">🚉 ${esc(stationText(s))}</span>
       </div>
 
+      ${s.perk?.text ? `<div class="perk-box"><b>${t('perkTitle')}</b><p>${translated(s.perk)}</p></div>` : ''}
+      ${localBar(s.localPct, { note: true })}
       ${s.welcome?.text ? `<div class="owner-says"><span class="owner-ico">🧑‍🍳</span><div><b>${t('ownerSays')}</b><p class="owner-text">${translated(s.welcome)}</p></div></div>` : ''}
       ${s.localsOrder?.text ? `<div class="locals-order big">🍢 <b>${t('localsOrder')}:</b> ${translated(s.localsOrder)}</div>` : ''}
+
+      ${s.popular ? `<div class="popular">⭐ <b>${t('popular')}:</b> ${translated(s.popular.name)}${s.popular.priceJPY != null ? ` <span class="pop-price">${yen(s.popular.priceJPY)}</span>` : ''}</div>` : ''}
+      ${canBook ? `<div class="section"><h4>📅 ${t('weekTitle')}</h4><p class="note">${t('markLegend')} · ${t('tapDay')}</p>${weekStrip(week, { tap: true })}</div>` : ''}
 
       <div class="section price-box">
         <div class="big">${price(s.priceJPY)} <span class="muted">${t('perPerson')}</span></div>
@@ -83,6 +91,8 @@ export async function render(view, id) {
     if (handleOriginal(e)) return;
     if (e.target.closest('[data-chat]')) needLogin(`#/chat/new?shop=${s.id}`);
     if (e.target.closest('[data-book]')) needLogin(`#/book/${s.id}`);
+    const day = e.target.closest('[data-day]')?.dataset.day;
+    if (day) { store(`tlm.draft.${s.id}`, { date: day, time: '', people: s.extra?.minPeople ?? 1, dietary: [], message: '', month: day.slice(0, 7) }); needLogin(`#/book/${s.id}`); }
     if (e.target.closest('[data-report]')) {
       const reason = prompt(t('reportPrompt'));
       if (reason?.trim()) { await post('shops', 'report', { shopId: s.id, reason }).catch(() => {}); toast(t('reportThanks')); }

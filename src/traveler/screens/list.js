@@ -5,20 +5,22 @@
 // ============================================================
 import { esc, openSheet, closeSheet, store, storage } from '../../common/ui.js';
 import { makeMap, placeSearch, mapsEnabled } from '../../common/maps.js';
-import { AVATAR, FULL_LANTERN } from '../../common/character-art.js';
-import { state, saveFilters, setCurrency, guessedCurrency, loadShops, loadRates } from '../state.js';
+import { AVATAR_NINJA, FULL_NINJA, fuji } from '../../common/character-art.js';
+import { state, saveFilters, setCurrency, guessedCurrency, loadShops, loadRates, setLang } from '../state.js';
 import { t } from '../strings.js';
-import { shopCard, rateNote, label } from '../components.js';
-import { AREAS, CATEGORIES, CUSTOMERS, YEARS, BUDGETS, DISTANCES, CURRENCIES } from '../../../shared/constants.js';
+import { shopCard, rateNote, label, L } from '../components.js';
+import { AREAS, CATEGORIES, CUSTOMERS, YEARS, BUDGETS, DISTANCES, CURRENCIES, LANGS } from '../../../shared/constants.js';
 
-const FILTERS = [
-  { key: 'category', label: 'fCategory', options: CATEGORIES.map((c) => [c.id, c.en]) },
-  { key: 'area', label: 'fArea', options: AREAS.map((a) => [a.id, a.en]) },
-  { key: 'budget', label: 'fBudget', options: BUDGETS.map((b) => [b.id, b.en]) },
-  { key: 'customers', label: 'fCustomers', options: CUSTOMERS.map((c) => [c.id, c.en]) },
-  { key: 'years', label: 'fYears', options: YEARS.map((y) => [y.id, y.en]) },
+// 表示言語で作り直すので関数にする
+const FILTERS = () => [
+  { key: 'category', label: 'fCategory', options: CATEGORIES.map((c) => [c.id, L(c)]) },
+  { key: 'area', label: 'fArea', options: AREAS.map((a) => [a.id, L(a)]) },
+  { key: 'budget', label: 'fBudget', options: BUDGETS.map((b) => [b.id, L(b)]) },
+  { key: 'customers', label: 'fCustomers', options: CUSTOMERS.map((c) => [c.id, L(c)]) },
+  { key: 'years', label: 'fYears', options: YEARS.map((y) => [y.id, L(y)]) },
   { key: 'distance', label: 'fDistance', options: DISTANCES.map((d) => [String(d), t('withinKm', { n: d })]) },
   { key: 'guidebook', label: 'fGuidebook', options: [['no', t('onlyNotInGuidebooks')]] },
+  { key: 'perk', label: 'fPerk', options: [['yes', t('onlyPerk')]] },
 ];
 
 function matches(s, f) {
@@ -32,10 +34,11 @@ function matches(s, f) {
   if (f.years && s.years !== f.years) return false;
   if (f.distance && s.stationKm > Number(f.distance)) return false;
   if (f.guidebook === 'no' && !s.notInGuidebooks) return false;
+  if (f.perk === 'yes' && !s.perk?.text) return false;
   return true;
 }
 
-/** はじめて開いたとき：ケロがゲームの会話のように案内する（スキップできる）。最後に表示通貨を選ぶ */
+/** はじめて開いたとき：忍者のケロがゲームの会話のように案内する（スキップできる）。言語は上で切り替えられる。最後に表示通貨を選ぶ */
 function keroIntro(after) {
   const lines = ['intro1', 'intro2', 'intro3', 'intro4', 'intro5'];
   let i = 0;
@@ -46,8 +49,10 @@ function keroIntro(after) {
   const draw = () => {
     const last = i === lines.length - 1;
     el.innerHTML = `
+      <div class="intro-langs">${LANGS.map((l) => `<button class="${l.id === state.lang ? 'on' : ''}" data-lang="${l.id}">${l.label}</button>`).join('')}</div>
       <button class="intro-skip" data-skip>${t('introSkip')}</button>
-      <div class="intro-chara">${FULL_LANTERN}</div>
+      <div class="intro-fuji">${fuji('meet')}</div>
+      <div class="intro-chara">${FULL_NINJA}</div>
       <div class="intro-box" role="dialog" aria-live="polite">
         <span class="intro-name">Kero</span>
         <p>${esc(t(lines[i]))}</p>
@@ -57,6 +62,8 @@ function keroIntro(after) {
   };
   el.onclick = (e) => {
     if (e.target.closest('[data-skip]')) return finish();
+    const lg = e.target.closest('[data-lang]')?.dataset.lang;
+    if (lg) { setLang(lg); document.dispatchEvent(new CustomEvent('lang-changed')); return draw(); }
     const c = e.target.closest('[data-cur]')?.dataset.cur;
     if (c) return finish(c);
     if (e.target.closest('[data-next]')) { i++; draw(); }
@@ -81,26 +88,27 @@ function askCurrency(after) {
 export async function render(view) {
   const [shops] = await Promise.all([loadShops(), loadRates()]);
   const f = state.filters;
+  const FILTERS_ = FILTERS();
   const items = shops.filter((s) => matches(s, f));
-  const active = FILTERS.filter((x) => f[x.key]);
+  const active = FILTERS_.filter((x) => f[x.key]);
   const suggestions = items.length || !shops.length ? [] : active
     .map((x) => ({ x, n: shops.filter((s) => matches(s, { ...f, [x.key]: '' })).length }))
     .filter((s) => s.n > 0).sort((a, b) => b.n - a.n);
 
   view.innerHTML = `
     <section>
-      <div class="hero-line"><p class="hero-ja">${t('heroJa')}</p><p class="hero-en">${t('heroEn')}</p></div>
-      ${state.greetClosed ? '' : `<div class="greet"><div class="char-avatar">${AVATAR}</div><p>${esc(t('greet'))}</p><button data-close-greet aria-label="Close">✕</button></div>`}
+      <div class="hero-line"><div class="hero-fuji">${fuji('meet')}</div><p class="hero-ja">${t('heroJa')}</p><p class="hero-en">${t('heroEn')}</p></div>
+      ${state.greetClosed ? '' : `<div class="greet"><div class="char-avatar">${AVATAR_NINJA}</div><p>${esc(t('greet'))}</p><button data-close-greet aria-label="Close">✕</button></div>`}
       <div class="filter-box">
         <div class="filters-grid">
-          ${FILTERS.map((x) => `<label class="label">${t(x.label)}
+          ${FILTERS_.map((x) => `<label class="label">${t(x.label)}
             <select data-filter="${x.key}"><option value="">${t('any')}</option>
               ${x.options.map(([v, l]) => `<option value="${esc(v)}" ${f[x.key] === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}
             </select></label>`).join('')}
         </div>
       </div>
       <div class="row-between">
-        <span class="muted small">${t('shopsCount', { n: items.length })} · ${t('newest')}</span>
+        <span class="muted small">${t('shopsCount', { n: items.length })} · ${t('newest')}<br>${t('markLegend')}</span>
         <span class="seg"><button data-view="list" class="${state.view === 'list' ? 'on' : ''}">${t('listView')}</button><button data-view="map" class="${state.view === 'map' ? 'on' : ''}">${t('mapView')}</button></span>
       </div>
       ${state.view === 'map' ? `
