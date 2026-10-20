@@ -67,7 +67,10 @@ model Shop {
   status      String    @default("draft") // draft | published | hidden（運営が非公開）
   isDemo      Boolean   @default(false) // デモ用の架空の店舗（画面に「DEMO」と出す。npm run demo:remove で消せる）
   category    String // experience | restaurant
-  area        String // uji | kyoto | osaka | nara
+  area        String // 都道府県コード（01〜47）。前の版の店舗は uji | kyoto | osaka | nara
+  pref        String? // 都道府県コード（01〜47・住所から自動）
+  city        Json? // 市区町村 { ja, en, zh, ko }（住所から自動）
+  station     Json? // 最寄り駅 { ja, en, zh, ko }（位置から自動で探し、直せる）
   name        Json // { ja, en }
   address     String
   postal      String? // 郵便番号
@@ -82,7 +85,7 @@ model Shop {
   link        String? // HP か Instagram（http/https のみ）
   customers   String // local | mixed | tourist
   years       String // <10 | 10-30 | 30+
-  stationKm   Float // 主要駅からの距離（事業者の申告・道のりの目安）
+  stationKm   Float // 最寄り駅からの距離（事業者の申告・道のりの目安）
   // ---- こだわり：点数ではなく事実で伝える／断られる不安をなくす ----
   localsOrder     Json? // 地元の人がいつも頼むもの・すること { ja, en }
   notInGuidebooks Boolean  @default(false) // ガイドブック・旅行サイトに載っていない

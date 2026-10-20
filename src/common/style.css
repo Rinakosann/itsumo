@@ -642,3 +642,97 @@ body:not(.night) .perk-box b { color: #a35a00; }
 @media (prefers-reduced-motion: reduce) { .shuriken-burst { display: none; } .loader .lane { animation: none; } }
 
 .night-top .footer-links a { color: #dfe4f7; text-shadow: 0 1px 6px #10152e, 0 0 2px #10152e; }
+
+/* ============================================================
+   旅行者：Jimotoを参考にした構成（左上のメニュー・行き先・絞り込みボタン）
+   ============================================================ */
+body.no-tabbar { padding-bottom: calc(env(safe-area-inset-bottom) + 24px); }
+.head-left { display: flex; align-items: center; gap: 10px; }
+.menu-btn { position: relative; width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); display: grid; align-content: center; justify-items: center; gap: 4px; padding: 0; }
+.menu-btn span { display: block; width: 18px; height: 2px; border-radius: 2px; background: var(--ink); }
+.menu-dot { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+.langcur-btn { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; }
+.drawer { position: fixed; inset: 0; z-index: 2500; }
+.drawer[hidden] { display: none; }
+.drawer-backdrop { position: absolute; inset: 0; background: rgba(5, 8, 20, .55); animation: fade .2s ease; }
+.drawer-panel { position: absolute; top: 0; bottom: 0; left: 0; width: min(320px, 84vw); background: var(--card); border-right: 1px solid var(--line); padding: 14px 10px calc(14px + env(safe-area-inset-bottom)); overflow-y: auto; animation: slide-in .22s ease; display: flex; flex-direction: column; gap: 2px; }
+@keyframes slide-in { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes fade { from { opacity: 0; } }
+.drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 12px; font-size: 17px; }
+.drawer-head .sheet-close { position: static; }
+.drawer-item { display: flex; align-items: center; gap: 12px; padding: 13px 10px; border-radius: 12px; text-decoration: none; color: var(--ink); background: none; border: 0; width: 100%; text-align: left; font-size: 16px; }
+.drawer-item:hover, .drawer-item.on { background: var(--brand-soft); }
+.drawer-item.on { color: var(--brand); font-weight: 700; }
+.di-icon { width: 26px; text-align: center; font-size: 19px; }
+.di-val { margin-left: auto; font-size: 12px; color: var(--muted); }
+.drawer-item .dot { margin-left: auto; }
+.toggle { margin-left: auto; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: var(--line); color: var(--muted); }
+.toggle.on { background: var(--ok-soft); color: var(--ok); }
+.drawer hr { border: 0; border-top: 1px solid var(--line); margin: 8px 6px; width: auto; }
+
+/* 右下の忍者ケロ */
+.kero-float { position: fixed; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 1500; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
+.kero-float[hidden] { display: none; }
+.kero-float > * { pointer-events: auto; }
+.kero-btn { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--brand); background: var(--card); padding: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); animation: hop 2.4s ease-in-out infinite; }
+.kero-btn svg { width: 100%; height: 100%; }
+.kero-bubble { max-width: 220px; background: var(--card); border: 2px solid var(--brand); border-radius: 16px 16px 4px 16px; padding: 8px 12px; font-size: 13px; box-shadow: 0 6px 20px rgba(0, 0, 0, .3); animation: rise .3s ease both; }
+.kero-bubble p { margin: 0 0 2px; }
+.kero-bubble .link { font-size: 12px; }
+body[data-route="shop"] .kero-float, body[data-route="book"] .kero-float { bottom: calc(86px + env(safe-area-inset-bottom)); }
+@media (prefers-reduced-motion: reduce) { .kero-btn { animation: none; } }
+
+/* 丸いボタンの並び（言語・通貨・地方・都道府県） */
+.pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 8px 14px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+.pill.on { background: var(--brand); border-color: var(--brand); color: #2a1405; font-weight: 700; }
+.pill small { font-size: 11px; opacity: .75; }
+.swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.intro .pill-row { margin-bottom: 10px; }
+.intro .lang-mini .pill { padding: 5px 10px; font-size: 12px; }
+.intro-box { max-height: 70vh; overflow-y: auto; }
+
+/* どこへ行きますか？ */
+.where h2 { font-size: 26px; margin-bottom: 12px; }
+.crumbs { margin: 2px 0 8px; font-size: 15px; }
+.crumbs .link { font-size: 15px; }
+.tilemap-box { position: relative; background: linear-gradient(180deg, #1a2350, #121731); border: 1px solid var(--line); border-radius: 18px; padding: 10px; overflow: hidden; }
+.tm-fuji { position: absolute; left: 0; right: 0; bottom: 0; height: 40%; opacity: .25; pointer-events: none; }
+.tm-fuji svg { width: 100%; height: 100%; }
+.tilemap { position: relative; width: 100%; height: auto; display: block; }
+.tile { cursor: pointer; transition: opacity .2s; }
+.tile rect { stroke: rgba(0, 0, 0, .25); stroke-width: 1; transition: transform .15s; }
+.tile text { font-size: 9px; font-weight: 700; fill: #1a1a2e; pointer-events: none; }
+.tile.dim { opacity: .25; }
+.tile.on rect { stroke: #fff; stroke-width: 3; }
+.tile:hover rect, .tile:focus rect { stroke: #fff; stroke-width: 2; outline: none; }
+.tile .cnt { fill: #ff6b7d; stroke: #fff; stroke-width: 1.2; }
+.tile .cnt-t { fill: #fff; font-size: 9px; font-weight: 800; }
+.when-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; margin: 16px 0 14px; align-items: end; }
+.when-row input[type=date] { width: 100%; margin-top: 4px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.stepper { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.stepper button { width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 20px; }
+.stepper b { min-width: 32px; text-align: center; font-size: 18px; }
+.where .btn.block { margin-top: 8px; }
+
+/* 一覧の上：行き先・日付・人数［変更］ */
+.search-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; text-align: left; margin: 4px 0 10px; }
+.sb-change { flex: none; font-size: 13px; color: var(--brand); border: 1px solid var(--brand); border-radius: 999px; padding: 3px 10px; }
+.filter-chips { margin-top: 10px; }
+.filter-chips .chip { padding: 7px 12px; }
+body.night .chip.on { color: #2a1405; }
+.legend { margin: 0 0 6px; }
+.place-card.unavailable { opacity: .55; }
+.na-note { font-size: 12px; color: var(--accent); margin: 2px 0 4px; font-weight: 700; }
+
+/* 地図（OpenStreetMap）のピン */
+.pin span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50% 50% 50% 4px; transform: rotate(-45deg); background: #ff9f43; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .4); font-size: 16px; }
+.pin span { transform: none; border-radius: 50%; }
+.leaflet-container { background: #1a2350; border-radius: var(--radius); }
+
+.where-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.where-kero { display: flex; align-items: center; gap: 6px; flex: none; max-width: 48%; }
+.wk-say { font-size: 12px; background: var(--card); border: 1.5px solid var(--brand); border-radius: 12px 12px 4px 12px; padding: 5px 9px; }
+.wk-av { width: 46px; height: 46px; flex: none; animation: hop 2.4s ease-in-out infinite; }
+.wk-av svg { width: 100%; height: 100%; }
+@media (prefers-reduced-motion: reduce) { .wk-av { animation: none; } }

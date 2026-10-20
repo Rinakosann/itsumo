@@ -5,8 +5,8 @@
 // ============================================================
 import { $, $$, esc, toast } from '../../common/ui.js';
 import { get, post } from '../../common/api.js';
-import { placeSearch, makeMap, mapsEnabled, distanceKm } from '../../common/maps.js';
-import { AREAS, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, LIMITS, TIPS, LOCAL_PCTS } from '../../../shared/constants.js';
+import { placeSearch, makeMap, mapsEnabled, placesEnabled } from '../../common/maps.js';
+import { CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, LIMITS, TIPS, LOCAL_PCTS, PREFS, REGIONS, LEGACY_AREAS, prefFromAddress, cityFromAddress } from '../../../shared/constants.js';
 
 const WEEK = ['日', '月', '火', '水', '木', '金', '土'];
 const ERR = { invalid_link: '外部リンクは http:// か https:// で始まるURLを入れてください。' };
@@ -32,6 +32,10 @@ export async function renderEdit(view, id) {
   let currentId = id === 'new' ? null : id;
   const opt = (list, cur, key = 'ja') => list.map((o) => `<option value="${o.id}" ${o.id === cur ? 'selected' : ''}>${esc(o[key])}</option>`).join('');
   const pos = { lat: s.lat ?? null, lng: s.lng ?? null, placeId: s.placeId ?? null, verified: Boolean(s.addressVerified) };
+  const legacy = LEGACY_AREAS[s.area];
+  const curPref = s.pref ?? legacy?.pref ?? (/^\d\d$/.test(s.area ?? '') ? s.area : '');
+  const curCity = s.city?.ja ?? legacy?.city?.ja ?? '';
+  const curStation = s.station?.ja ?? legacy?.station?.ja ?? '';
 
   const slotRow = (sl = { time: '', capacity: 4 }) => `
     <div class="slot-row"><label class="label">開始時刻<input type="time" name="slotTime" value="${esc(sl.time)}" step="900" /></label>
@@ -46,22 +50,23 @@ export async function renderEdit(view, id) {
 
       <form class="form" id="f" novalidate>
         <h4>① Googleマップでお店を探す</h4>
-        ${mapsEnabled() ? `<div id="place" class="place-search"></div><p class="muted small">お店の名前で検索して選ぶと、店名・住所・地図の位置・HPが自動で入ります（あとで直せます）。</p>` : '<p class="muted small">（地図の設定がまだのため、住所を手で入力してください）</p>'}
+        ${placesEnabled() ? `<div id="place" class="place-search"></div><p class="muted small">お店の名前で検索して選ぶと、店名・住所・地図の位置・HPが自動で入ります（あとで直せます）。</p>` : '<p class="muted small">（Googleマップの設定がまだのため、郵便番号か住所を入れて「住所を確認する」を押してください）</p>'}
         <div id="edit-map" class="map small" ${mapsEnabled() && pos.lat != null ? '' : 'hidden'}></div>
 
         <h4>② 基本情報</h4>
         <label>店名＊<input name="name" maxlength="60" value="${esc(s.name?.ja)}" /></label>
-        <div class="form-row">
-          <label>カテゴリ＊<select name="category">${opt(CATEGORIES, s.category)}</select></label>
-          <label>エリア＊<select name="area"><option value="">選ぶ</option>${AREAS.map((a) => `<option value="${a.id}" ${a.id === s.area ? 'selected' : ''}>${a.ja}（主要駅：${a.stationJa}）</option>`).join('')}</select></label>
-        </div>
+        <label>カテゴリ＊<select name="category">${opt(CATEGORIES, s.category)}</select></label>
         <div class="form-row">
           <label>郵便番号<input name="postal" inputmode="numeric" maxlength="8" placeholder="611-0021" value="${esc(s.postal ?? '')}" /></label>
           <label>&nbsp;<button type="button" class="btn" data-zip>郵便番号から住所を入れる</button></label>
         </div>
         <label>住所＊<input name="address" maxlength="200" value="${esc(s.address)}" placeholder="都道府県から番地まで" /></label>
         <div class="row-between"><button type="button" class="btn" data-verify>📍 住所を確認する</button><span id="verified" class="small">${s.addressVerified ? '✅ 実在する住所を確認しました' : '<span class="muted">未確認（公開には確認が必要です）</span>'}</span></div>
-        <p class="muted small">国土地理院の住所検索で、住所が実在するかを確かめます。確認できると地図の位置と駅からの距離も入ります。</p>
+        <p class="muted small">国土地理院の住所検索で、住所が実在するかを確かめます。確認できると、地図の位置と<b>最寄り駅</b>も自動で入ります。</p>
+        <div class="form-row">
+          <label>都道府県＊<select name="pref"><option value="">住所から自動で入ります</option>${REGIONS.map((r) => `<optgroup label="${r.ja}">${PREFS.filter((p) => p.region === r.id).map((p) => `<option value="${p.id}" ${p.id === curPref ? 'selected' : ''}>${p.ja}</option>`).join('')}</optgroup>`).join('')}</select></label>
+          <label>市区町村<input name="city" maxlength="40" value="${esc(curCity)}" placeholder="住所から自動で入ります" /></label>
+        </div>
         <label>説明文＊<textarea name="description" maxlength="${LIMITS.descriptionMaxChars}" rows="5" placeholder="どんなお店・体験か、旅行者に伝えたいこと">${esc(s.description?.ja)}</textarea></label>
         <div class="form-row">
           <label>料金（1人・円）＊<input name="priceJPY" type="number" min="0" step="100" value="${s.priceJPY ?? ''}" /></label>
@@ -75,8 +80,12 @@ export async function renderEdit(view, id) {
           <label>客層＊<select name="customers"><option value="">選ぶ</option>${opt(CUSTOMERS, s.customers)}</select></label>
           <label>営業年数＊<select name="years"><option value="">選ぶ</option>${opt(YEARS, s.years)}</select></label>
         </div>
-        <label>主要駅からの距離（km・道のりの目安）＊<input name="stationKm" type="number" min="0" max="100" step="0.1" value="${s.stationKm ?? ''}" />
-          <span class="muted small" id="km-hint">エリアの主要駅からの道のり。Googleマップでお店を選ぶと直線距離が参考として入ります。</span></label>
+        <div class="form-row">
+          <label>最寄り駅＊<input name="stationName" maxlength="40" value="${esc(curStation)}" placeholder="例：宇治駅" /></label>
+          <label>駅からの距離（km）＊<input name="stationKm" type="number" min="0" max="100" step="0.1" value="${s.stationKm ?? ''}" /></label>
+        </div>
+        <div id="station-pick" class="chips"></div>
+        <span class="muted small" id="km-hint">住所を確認すると、近くの駅の候補が出ます（距離は直線距離。道のりに合わせて直してください）。</span>
 
         <label>地元の人がいつも頼むもの・すること（任意）<input name="localsOrder" maxlength="100" value="${esc(s.localsOrder?.ja ?? '')}" placeholder="例：常連さんはいつも、おでんの大根と熱燗" />
           <span class="muted small">星の評価ではなく、地元の人のふだんの楽しみ方を伝えます。一覧とお店のページに大きく出ます。</span></label>
@@ -135,12 +144,20 @@ export async function renderEdit(view, id) {
   showCat();
   f.category.onchange = showCat;
 
-  // いちばん近い主要駅のエリアを選び、直線距離を参考値として入れる
-  const suggestStation = (p) => {
-    const nearest = AREAS.map((a) => ({ a, km: distanceKm(a, p) })).sort((u, v) => u.km - v.km)[0];
-    if (!f.area.value && nearest.km < 30) f.area.value = nearest.a.id;
-    const area = AREAS.find((a) => a.id === f.area.value);
-    if (area) { const km = Math.round(distanceKm(area, p) * 10) / 10; if (!f.stationKm.value) f.stationKm.value = km; $('#km-hint').textContent = `${area.stationJa}からの直線距離は 約${km}km です。道のりに合わせて直してください。`; }
+  // 住所から都道府県・市区町村を入れる
+  const fillPrefCity = () => {
+    const p = prefFromAddress(f.address.value);
+    if (p) f.pref.value = p.id;
+    const c = cityFromAddress(f.address.value);
+    if (c) f.city.value = c;
+  };
+  // 位置から近くの駅を探して候補を出す（日本全国）。いちばん近い駅を入れる
+  const suggestStation = async (p) => {
+    const { items } = await get('geo', 'station', { lat: p.lat, lng: p.lng }).catch(() => ({ items: [] }));
+    if (!items.length) { $('#km-hint').textContent = '近くの駅が見つかりませんでした。最寄り駅を手で入れてください。'; return; }
+    if (!f.stationName.value) { f.stationName.value = items[0].name; f.stationKm.value = items[0].km; }
+    $('#station-pick').innerHTML = items.map((x) => `<button type="button" class="chip" data-station="${esc(x.name)}" data-km="${x.km}">🚉 ${esc(x.name)}（${esc(x.line)}）約${x.km}km</button>`).join('');
+    $('#km-hint').textContent = '候補を押すと入ります。距離は直線距離なので、道のりに合わせて直してください。';
   };
   let map = null;
   const drawMap = () => {
@@ -149,12 +166,12 @@ export async function renderEdit(view, id) {
     makeMap($('#edit-map'), { language: 'ja', markers: [{ lat: pos.lat, lng: pos.lng, title: f.name.value }] }).then((m) => { map = m; }).catch(() => {});
   };
   drawMap();
-  if (mapsEnabled()) {
+  if (placesEnabled()) {
     placeSearch($('#place'), (p) => {
       pos.lat = p.lat; pos.lng = p.lng; pos.placeId = p.placeId; pos.verified = p.lat != null;
       $('#verified').innerHTML = '✅ Googleマップで実在を確認しました';
       if (p.name) f.name.value = p.name;
-      if (p.address) f.address.value = p.address.replace(/^日本、?\s*/, '');
+      if (p.address) { f.address.value = p.address.replace(/^日本、?\s*(〒?\d{3}-?\d{4}\s*)?/, ''); fillPrefCity(); }
       if (p.website && !f.link.value) f.link.value = p.website;
       if (p.lat != null) suggestStation(p);
       drawMap();
@@ -162,11 +179,12 @@ export async function renderEdit(view, id) {
     }, { language: 'ja', placeholder: 'お店の名前で検索（例：中村藤吉 本店）' }).catch(() => {});
   }
 
+  f.address.addEventListener('change', fillPrefCity);
   f.address.addEventListener('input', () => { pos.verified = false; $('#verified').innerHTML = '<span class="muted">住所が変わりました。もう一度確認してください</span>'; });
   view.onclick = async (e) => {
     if (e.target.closest('[data-zip]')) {
       const r = await get('geo', 'zip', { code: f.postal.value }).catch(() => ({ found: false }));
-      if (r.found) { f.address.value = r.address; f.address.focus(); toast('住所を入れました。続けて番地を入れてください'); } else toast('郵便番号から住所が見つかりませんでした');
+      if (r.found) { f.address.value = r.address; fillPrefCity(); f.address.focus(); toast('住所を入れました。続けて番地を入れてください'); } else toast('郵便番号から住所が見つかりませんでした');
     }
     if (e.target.closest('[data-verify]')) {
       if (!f.address.value.trim()) return toast('住所を入れてください');
@@ -174,6 +192,7 @@ export async function renderEdit(view, id) {
       if (r.found) {
         if (!pos.placeId) { pos.lat = r.lat; pos.lng = r.lng; }
         pos.verified = true;
+        fillPrefCity();
         $('#verified').innerHTML = `✅ 実在する住所を確認しました（${esc(r.title)}）`;
         suggestStation(r); drawMap();
       } else { $('#verified').innerHTML = '<span class="error">住所が見つかりませんでした。番地まで正しく入っているか確認してください</span>'; }
@@ -183,6 +202,8 @@ export async function renderEdit(view, id) {
       $('#slots').insertAdjacentHTML('beforeend', slotRow());
     }
     if (e.target.closest('[data-del-slot]')) e.target.closest('.slot-row').remove();
+    const st = e.target.closest('[data-station]');
+    if (st) { f.stationName.value = st.dataset.station; f.stationKm.value = st.dataset.km; }
     if (e.target.closest('[data-unpublish]') && confirm('非公開にしますか？旅行者の一覧に表示されなくなります（予約済みの分はそのままです）。')) {
       await post('biz', 'shop-unpublish', { id: currentId }); toast('非公開にしました'); location.hash = '#/shops';
     }
@@ -193,7 +214,7 @@ export async function renderEdit(view, id) {
     const publish = e.submitter?.value === 'publish';
     const fd = new FormData(f);
     const shop = {
-      name: fd.get('name'), category: fd.get('category'), area: fd.get('area'), address: fd.get('address'), description: fd.get('description'),
+      name: fd.get('name'), category: fd.get('category'), pref: fd.get('pref'), city: fd.get('city'), stationName: fd.get('stationName'), address: fd.get('address'), description: fd.get('description'),
       priceJPY: fd.get('priceJPY'), durationMin: fd.get('durationMin'), payment: fd.get('payment'), link: fd.get('link'),
       customers: fd.get('customers'), years: fd.get('years'), stationKm: fd.get('stationKm'),
       bring: fd.get('bring'), minPeople: fd.get('minPeople'), dietary: fd.getAll('dietary'), allergyOk: fd.has('allergyOk'), menuStyle: fd.get('menuStyle'),

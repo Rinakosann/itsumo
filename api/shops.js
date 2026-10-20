@@ -1,15 +1,21 @@
 // /api/shops?action=...  旅行者向け：店舗の一覧・詳細（ログイン不要）、閲覧の記録、店舗の報告
-import { api, bad, notFound, str } from '../server/http.js';
+import { api, bad, notFound, str, isDate } from '../server/http.js';
+import { todayJST } from '../shared/time.js';
 import { prisma } from '../server/db.js';
 import { currentUser } from '../server/auth.js';
 import { toPublic, availability, bookingCounts, weekMarks, langOf } from '../server/shops.js';
 
 export default api({
-  /** 公開中の店舗（新着順）。?lang= en | zh | ko。1週間分の空き（〇△✕）つき */
+  /**
+   * 公開中の店舗（新着順）。?lang= en | zh | ko | ja
+   * ?date=YYYY-MM-DD&people=n を渡すと、その日から1週間分の空き（〇△✕）をその人数で計算する
+   */
   async 'GET list'(ctx) {
     const lang = langOf(ctx.query.lang);
+    const from = isDate(ctx.query.date) && ctx.query.date >= todayJST() ? ctx.query.date : todayJST();
+    const people = Math.min(20, Math.max(1, Number(ctx.query.people) || 1));
     const shops = await prisma.shop.findMany({ where: { status: 'published' }, orderBy: { publishedAt: 'desc' } });
-    const [count, week] = await Promise.all([bookingCounts(shops.map((s) => s.id)), weekMarks(shops)]);
+    const [count, week] = await Promise.all([bookingCounts(shops.map((s) => s.id)), weekMarks(shops, { from, people })]);
     return { items: shops.map((s) => toPublic({ ...s, _bookingCount: count(s.id), _week: week(s) }, lang)) };
   },
 

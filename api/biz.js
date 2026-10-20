@@ -6,7 +6,7 @@ import { requireUser } from '../server/auth.js';
 import { jaToAll, fullyTranslated } from '../server/translate.js';
 import { geocodeJa } from '../server/geo.js';
 import { isPast } from '../shared/booking.js';
-import { AREAS, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, CANCEL_REASONS, LIMITS, TIPS, LOCAL_PCTS } from '../shared/constants.js';
+import { CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, CANCEL_REASONS, LIMITS, TIPS, LOCAL_PCTS, PREFS, prefFromAddress, cityFromAddress } from '../shared/constants.js';
 import { todayJST, addDays } from '../shared/time.js';
 
 const biz = (ctx) => requireUser(ctx, 'business');
@@ -39,16 +39,19 @@ function readShop(b) {
     missing,
     data: {
       category: need(opt(b.category, CATEGORIES), 'カテゴリ'),
-      area: need(opt(b.area, AREAS), 'エリア'),
       nameJa: need(str(b.name, { max: 60 }), '店名'),
       address: need(str(b.address, { max: 200 }), '住所'),
+      // 日本全国：都道府県・市区町村は住所から自動で決める（選び直しもできる）
+      pref: need(opt(b.pref, PREFS) ?? prefFromAddress(str(b.address, { max: 200 }))?.id ?? null, '都道府県（住所の先頭に入れてください）'),
+      cityJa: str(b.city, { max: 40 }) || cityFromAddress(str(b.address, { max: 200 })),
+      stationJa: need(str(b.stationName, { max: 40 }), '最寄り駅'),
       descriptionJa: need(str(b.description, { max: LIMITS.descriptionMaxChars }), '説明文'),
       priceJPY: need(price != null && price >= 0 && price <= 1_000_000 ? Math.round(price) : null, '料金'),
       durationMin: need(duration != null && duration >= 10 && duration <= 1440 ? Math.round(duration) : null, '所要時間'),
       payment: need(opt(b.payment, PAYMENTS), '支払い方法'),
       customers: need(opt(b.customers, CUSTOMERS), '客層'),
       years: need(opt(b.years, YEARS), '営業年数'),
-      stationKm: need(km != null && km >= 0 && km <= 100 ? Math.round(km * 10) / 10 : null, '主要駅からの距離'),
+      stationKm: need(km != null && km >= 0 && km <= 100 ? Math.round(km * 10) / 10 : null, '最寄り駅からの距離'),
       link: link || null,
       lat: num(b.lat), lng: num(b.lng), placeId: str(b.placeId, { max: 300 }) || null,
       postal: str(b.postal, { max: 8 }).replace(/[^0-9-]/g, '') || null,
@@ -112,10 +115,10 @@ export default api({
 
     // 英語・中国語・韓国語に自動翻訳（変わっていない文は訳し直さない）
     const tr = async (prevVal, ja) => (ja ? keep(prevVal, ja) ?? (await jaToAll(ja)) : null);
-    const [name0, description0, bring, localsOrder, welcome, tipsNote, popularName, perk] = await Promise.all([
+    const [name0, description0, bring, localsOrder, welcome, tipsNote, popularName, perk, city, station] = await Promise.all([
       tr(prev?.name, v.nameJa), tr(prev?.description, v.descriptionJa), tr(prev?.extra?.bring, v.bringJa),
       tr(prev?.localsOrder, v.localsOrderJa), tr(prev?.welcome, v.welcomeJa), tr(prev?.tipsNote, v.tipsNoteJa),
-      tr(prev?.popular?.name, v.popularJa), tr(prev?.perk, v.perkJa),
+      tr(prev?.popular?.name, v.popularJa), tr(prev?.perk, v.perkJa), tr(prev?.city, v.cityJa), tr(prev?.station, v.stationJa),
     ]);
     const name = name0 ?? { ja: '' };
     const description = description0 ?? { ja: '' };
@@ -129,7 +132,7 @@ export default api({
     const publish = wantPublish && missing.length === 0;
 
     const data = {
-      category: v.category ?? 'experience', area: v.area ?? AREAS[0].id, name, address: v.address ?? '', description,
+      category: v.category ?? 'experience', area: v.pref ?? prev?.area ?? '26', pref: v.pref, city: city ?? Prisma.DbNull, station: station ?? Prisma.DbNull, name, address: v.address ?? '', description,
       priceJPY: v.priceJPY ?? 0, durationMin: v.durationMin ?? 60, payment: v.payment ?? 'cash',
       customers: v.customers ?? 'mixed', years: v.years ?? '<10', stationKm: v.stationKm ?? 0,
       link: v.link, lat: v.lat, lng: v.lng, placeId: v.placeId, postal: v.postal, addressVerified: v.addressVerified,
@@ -145,7 +148,7 @@ export default api({
     const saved = prev
       ? await prisma.shop.update({ where: { id: prev.id }, data })
       : await prisma.shop.create({ data: { ...data, ownerId: user.id } });
-    const translateFailed = [name, description, bring, localsOrder, welcome, tipsNote, popularName, perk].some((o) => o && o.ja && !fullyTranslated(o));
+    const translateFailed = [name, description, bring, localsOrder, welcome, tipsNote, popularName, perk, city, station].some((o) => o && o.ja && !fullyTranslated(o));
     return { id: saved.id, status: saved.status, missing: wantPublish ? missing : [], translateFailed };
   },
 

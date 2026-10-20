@@ -4,7 +4,7 @@
 //  失敗したら null を返す → 画面では原文を出し「翻訳できませんでした」と示す。
 // ============================================================
 import Anthropic from '@anthropic-ai/sdk';
-import { LANGS } from '../shared/constants.js';
+import { LANGS, TR_LANGS } from '../shared/constants.js';
 
 const NAMES = { ja: 'Japanese', en: 'English', zh: 'Simplified Chinese', ko: 'Korean' };
 const MM = { ja: 'ja', ...Object.fromEntries(LANGS.map((l) => [l.id, l.mm])) };
@@ -70,10 +70,10 @@ export async function translate(text, from, to) {
 /** 日本語 → { ja, en, zh, ko }（null の言語は翻訳失敗。画面では英語→原文の順で代わりに出す） */
 export async function jaToAll(ja) {
   if (!ja) return { ja: '', en: '', zh: '', ko: '' };
-  const out = await Promise.all(LANGS.map((l) => translate(ja, 'ja', l.id)));
-  return { ja, ...Object.fromEntries(LANGS.map((l, i) => [l.id, out[i]])) };
+  const out = await Promise.all(TR_LANGS.map((l) => translate(ja, 'ja', l.id)));
+  return { ja, ...Object.fromEntries(TR_LANGS.map((l, i) => [l.id, out[i]])) };
 }
 export const jaToEn = jaToAll; // 旧名（互換のため）
 
 /** すべての言語の訳がそろっているか */
-export const fullyTranslated = (o) => Boolean(o?.ja) && LANGS.every((l) => o[l.id]);
+export const fullyTranslated = (o) => Boolean(o?.ja) && TR_LANGS.every((l) => o[l.id]);

@@ -1,7 +1,7 @@
 // 店舗データを画面に渡す形にする。
 import { prisma } from './db.js';
 import { todayJST, addDays } from '../shared/time.js';
-import { LIMITS, LANG_IDS } from '../shared/constants.js';
+import { LIMITS, LANG_IDS, LEGACY_AREAS } from '../shared/constants.js';
 import { dayMark } from '../shared/booking.js';
 
 export const langOf = (v) => (LANG_IDS.includes(v) ? v : 'en');
@@ -13,8 +13,11 @@ export const en = (o) => loc(o, 'en');
 export function toPublic(s, lang = 'en') {
   const x = s.extra ?? {};
   const L = (o) => loc(o, lang);
+  const legacy = LEGACY_AREAS[s.area];
   return {
-    id: s.id, isDemo: s.isDemo, category: s.category, area: s.area, name: L(s.name), address: s.address, lat: s.lat, lng: s.lng, placeId: s.placeId, addressVerified: s.addressVerified,
+    id: s.id, isDemo: s.isDemo, category: s.category, area: s.area,
+    pref: s.pref ?? legacy?.pref ?? (/^\d\d$/.test(s.area) ? s.area : null),
+    city: L(s.city ?? legacy?.city), station: L(s.station ?? legacy?.station), name: L(s.name), address: s.address, lat: s.lat, lng: s.lng, placeId: s.placeId, addressVerified: s.addressVerified,
     description: L(s.description), priceJPY: s.priceJPY, durationMin: s.durationMin, payment: s.payment, link: s.link,
     customers: s.customers, years: s.years, stationKm: s.stationKm,
     localsOrder: L(s.localsOrder), notInGuidebooks: s.notInGuidebooks, welcome: L(s.welcome), tips: s.tips ?? [], tipsNote: L(s.tipsNote),
@@ -37,9 +40,8 @@ export async function bookingCounts(shopIds) {
   return (id) => map[id] ?? 0;
 }
 
-/** 一覧用：店舗ごとに、今日から days 日分の空きの印（2回の問い合わせでまとめて計算） */
-export async function weekMarks(shops, days = 7) {
-  const from = todayJST();
+/** 一覧用：店舗ごとに、from から days 日分の空きの印（people 人が入れるか。2回の問い合わせでまとめて計算） */
+export async function weekMarks(shops, { days = 7, from = todayJST(), people = 1 } = {}) {
   const to = addDays(from, days - 1);
   const ids = shops.map((s) => s.id);
   const [blocked, booked] = await Promise.all([
@@ -51,7 +53,7 @@ export async function weekMarks(shops, days = 7) {
   const bk = {};
   for (const b of booked) ((bk[b.shopId] ??= {})[b.date] ??= {})[b.time] = b._sum.people ?? 0;
   const dates = Array.from({ length: days }, (_, i) => addDays(from, i));
-  return (s) => ((s.slots ?? []).length ? dates.map((date) => ({ date, mark: dayMark(s, date, bl[s.id] ?? new Set(), bk[s.id]?.[date]) })) : null);
+  return (s) => ((s.slots ?? []).length ? dates.map((date) => ({ date, mark: dayMark(s, date, bl[s.id] ?? new Set(), bk[s.id]?.[date], new Date(), people) })) : null);
 }
 
 /** 予約に必要な情報：受付停止日と、枠ごとの予約済み人数 */

@@ -6,25 +6,24 @@ import { state, loadRates } from '../state.js';
 import { store } from '../../common/ui.js';
 import { marksFor } from '../../../shared/booking.js';
 import { t, errText } from '../strings.js';
-import { price, rateNote, stationText, translated, handleOriginal, label, paymentText, tipsHtml, phrasesHtml, weekStrip, localBar, L, yen } from '../components.js';
-import { areaOf, CATEGORIES, CUSTOMERS, YEARS, DIETARY, MENU_STYLES, CUTOFFS } from '../../../shared/constants.js';
+import { price, rateNote, stationText, placeText, translated, handleOriginal, label, paymentText, tipsHtml, phrasesHtml, weekStrip, localBar, L, yen } from '../components.js';
+import { CATEGORIES, CUSTOMERS, YEARS, DIETARY, MENU_STYLES, CUTOFFS } from '../../../shared/constants.js';
 
 export async function render(view, id) {
   let s;
   try { s = (await get('shops', 'get', { id, lang: state.lang })).item; } catch (e) { view.innerHTML = `<p class="empty">${esc(errText(e))}</p><a class="btn block" href="#/">${t('back')}</a>`; return; }
   await loadRates();
   post('shops', 'view', { shopId: s.id, visitorId: state.visitorId }).catch(() => {}); // 閲覧の記録（成功指標）
-  const a = areaOf(s.area);
   const x = s.extra ?? {};
   const canBook = s.slots.length > 0;
-  const week = marksFor(s, 14); // 2週間分の空き（〇△✕）
+  const week = marksFor(s, 14, new Date(), state.search.people || 1); // 2週間分の空き（〇△✕）。探す条件の人数で
 
   view.innerHTML = `
     <section class="detail">
       <a class="back" href="#/">← ${t('back')}</a>
       ${s.isDemo ? `<p class="notice warn small"><span class="demo-tag">${t('demoTag')}</span> ${t('demoNote')}</p>` : ''}
       <h2>${translated(s.name)}</h2>
-      <p class="sub">${esc(label(CATEGORIES, s.category))} · ${esc(L(a))}</p>
+      <p class="sub">${esc(label(CATEGORIES, s.category))} · ${esc(placeText(s))}</p>
       <div class="facts">
         ${s.notInGuidebooks ? `<span class="fact special">📖 ${t('notInGuidebooks')}</span>` : ''}
         ${s.firstGuests ? `<span class="fact first">✨ ${t('firstGuests')}</span>` : ''}
@@ -70,7 +69,7 @@ export async function render(view, id) {
         ${s.link ? `<a class="btn block" href="${esc(s.link)}" target="_blank" rel="noopener noreferrer nofollow">🔗 ${t('externalLink')} ↗</a><p class="warn-ext">${t('leaving')}: ${esc(s.link)}</p>` : ''}
       </div>
 
-      <details class="section"><summary>🗣️ ${t('phrasesTitle')}</summary>${phrasesHtml(state.user?.name, false)}</details>
+      ${state.lang === 'ja' ? '' : `<details class="section"><summary>🗣️ ${t('phrasesTitle')}</summary>${phrasesHtml(state.user?.name, false)}</details>`}
       ${canBook ? '' : `<p class="notice info">${t('noSlots')}</p>`}
       <div class="sticky-actions">
         <button class="btn" data-chat>💬 ${t('chat')}</button>
@@ -92,7 +91,7 @@ export async function render(view, id) {
     if (e.target.closest('[data-chat]')) needLogin(`#/chat/new?shop=${s.id}`);
     if (e.target.closest('[data-book]')) needLogin(`#/book/${s.id}`);
     const day = e.target.closest('[data-day]')?.dataset.day;
-    if (day) { store(`tlm.draft.${s.id}`, { date: day, time: '', people: s.extra?.minPeople ?? 1, dietary: [], message: '', month: day.slice(0, 7) }); needLogin(`#/book/${s.id}`); }
+    if (day) { store(`tlm.draft.${s.id}`, { date: day, time: '', people: Math.max(s.extra?.minPeople ?? 1, state.search.people || 1), dietary: [], message: '', month: day.slice(0, 7) }); needLogin(`#/book/${s.id}`); }
     if (e.target.closest('[data-report]')) {
       const reason = prompt(t('reportPrompt'));
       if (reason?.trim()) { await post('shops', 'report', { shopId: s.id, reason }).catch(() => {}); toast(t('reportThanks')); }

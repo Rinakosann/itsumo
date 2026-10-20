@@ -8,13 +8,17 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700;800&display=swap" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 </head>
-<body class="traveler night">
+<body class="traveler night no-tabbar">
   <header class="app-header">
-    <a class="brand" href="/traveler#/"><span class="brand-mark">灯</span><span class="brand-name">ITSUMO</span></a>
-    <span class="head-right"><select id="lang-switch" aria-label="Language"></select><a class="small" href="/">Home</a></span>
+    <span class="head-left">
+      <button id="menu-btn" class="menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span><i id="menu-dot" class="menu-dot" hidden></i></button>
+      <a class="brand" href="/traveler#/"><span class="brand-mark">灯</span><span class="brand-name">ITSUMO</span></a>
+    </span>
+    <button id="langcur-btn" class="langcur-btn" aria-label="Language & currency"></button>
   </header>
+  <div id="drawer" class="drawer" hidden><div class="drawer-backdrop" data-close-drawer></div><nav class="drawer-panel" id="drawer-panel"></nav></div>
   <main id="view" class="container"></main>
-  <nav id="nav" class="tabbar"></nav>
+  <div id="kero" class="kero-float" hidden></div>
   <script type="module" src="/src/traveler/main.js"></script>
 </body>
 </html>

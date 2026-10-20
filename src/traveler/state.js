@@ -23,6 +23,9 @@ export const state = {
   filters: storage('tlm.filters', {}),
   view: storage('tlm.view', 'list'),
   greetClosed: storage('tlm.greetClosed', false),
+  // 探す条件（日本全国から）：地方・都道府県・現在地・日付・人数
+  search: { region: '', pref: '', near: null, date: '', people: 2, ...storage('tlm.search', {}) },
+  keroOn: storage('tlm.kero', true), // 右下のケロを表示するか（メニューで切り替え）
   unread: 0,
   visitorId: storage('tlm.visitor', null) ?? (() => { const v = Math.random().toString(36).slice(2); store('tlm.visitor', v); return v; })(),
 };
@@ -35,6 +38,7 @@ export function setCurrency(c) {
   store('tlm.currency', c);
 }
 export const saveFilters = () => store('tlm.filters', state.filters);
+export const saveSearch = () => { store('tlm.search', state.search); state.shops = null; };
 
 /** 表示言語を変える（お店の文は日本語から自動翻訳されたものに切り替わる） */
 export function setLang(l) {
@@ -64,6 +68,9 @@ export async function loadRates() {
 }
 
 export async function loadShops(force) {
-  if (!state.shops || force) state.shops = (await get('shops', 'list', { lang: state.lang })).items;
+  if (!state.shops || force) {
+    const { date, people } = state.search;
+    state.shops = (await get('shops', 'list', { lang: state.lang, date: date || '', people: people || 1 })).items;
+  }
   return state.shops;
 }

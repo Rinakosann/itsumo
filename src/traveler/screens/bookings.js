@@ -52,7 +52,7 @@ export async function renderOne(view, id) {
         ${b.dietary.length ? `<div class="wide"><b>${t('dietary')}</b>${b.dietary.map((d) => esc(label(DIETARY, d))).join(', ')}</div>` : ''}
       </div>
       ${rateNote()}
-      ${['confirmed', 'completed'].includes(b.status) ? `${tipsHtml(s)}${phrasesHtml(state.user?.name)}` : ''}
+      ${['confirmed', 'completed'].includes(b.status) ? `${tipsHtml(s)}${state.lang === 'ja' ? '' : phrasesHtml(state.user?.name)}` : ''}
       <a class="btn block" href="${esc(googleMapsLink({ name: s.name.ja, lat: s.lat, lng: s.lng, placeId: s.placeId, address: s.address }))}" target="_blank" rel="noopener">🧭 ${t('openInMaps')}</a>
       <a class="btn block" href="${b.threadId ? `#/chat/${b.threadId}` : `#/chat/new?shop=${s.id}`}">💬 ${t('openChat')}</a>
       ${b.status === 'confirmed' ? `<button class="btn block danger" data-cancel>${t('cancel')}</button>` : ''}

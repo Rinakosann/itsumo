@@ -2,7 +2,7 @@
 import { esc } from '../common/ui.js';
 import { state, locale } from './state.js';
 import { t } from './strings.js';
-import { areaOf, CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, TIPS, PHRASES } from '../../shared/constants.js';
+import { CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, TIPS, PHRASES, LANGS, CURRENCIES, prefOf } from '../../shared/constants.js';
 
 export const yen = (n) => `¥${Math.round(n).toLocaleString('ja-JP')}`;
 /** 選択肢の表示名（旅行者の言語。なければ英語） */
@@ -11,27 +11,28 @@ export const L = (x) => x?.[state.lang] ?? x?.en ?? '';
 
 /** 日本円＋選んだ通貨の目安 */
 export function price(jpy) {
-  const rate = state.rates?.rates?.[state.currency];
+  const rate = state.currency === 'JPY' ? null : state.rates?.rates?.[state.currency]; // 円を選んだら円だけ
   const approx = rate ? new Intl.NumberFormat(locale(), { style: 'currency', currency: state.currency, maximumFractionDigits: jpy * rate < 100 ? 2 : 0 }).format(jpy * rate) : null;
   return `<b>${yen(jpy)}</b>${approx ? ` <span class="approx">≈ ${t('approx')} ${approx}</span>` : ''}`;
 }
 
 export function rateNote() {
   const r = state.rates;
-  if (!r?.rates || !state.currency) return '';
+  if (!r?.rates || !state.currency || state.currency === 'JPY') return '';
   const date = new Date(r.fetchedAt).toLocaleDateString(locale(), { month: 'short', day: 'numeric', year: 'numeric' });
   return `<p class="note">💱 ${esc(t(r.stale ? 'rateStale' : 'rateNote', { date }))}</p>`;
 }
 
 export function stationText(s) {
-  const a = areaOf(s.area);
-  const station = { en: a?.stationEn, zh: a?.stationZh, ko: a?.stationKo }[state.lang] ?? a?.stationEn ?? '';
-  return t('fromStation', { km: s.stationKm, station });
+  return t('fromStation', { km: s.stationKm, station: s.station?.text ?? '' });
 }
+/** 「宇治市 · 京都府」 */
+export const placeText = (s) => [s.city?.text, L(prefOf(s.pref))].filter(Boolean).join(' · ');
 
 /** 自動翻訳された文：翻訳失敗の表示と「原文を見る」 */
 export function translated(field) {
   if (!field) return '';
+  if (state.lang === 'ja') return esc(field.ja || field.text); // 日本語を選んだ人には原文
   if (field.failed) return `${esc(field.text)}<span class="tr-tools">⚠️ ${t('notTranslated')}</span>`;
   return `${esc(field.text)}<span class="tr-tools">🌐 ${t('translated')} · <button class="link" data-original="${esc(field.ja)}">${t('showOriginal')}</button></span>`;
 }
@@ -65,17 +66,17 @@ export function localBar(pct, { note = false } = {}) {
 }
 
 export function shopCard(s) {
-  const a = areaOf(s.area);
   return `
-    <a class="card place-card" href="#/shop/${s.id}">
+    <a class="card place-card ${s.unavailable ? 'unavailable' : ''}" href="#/shop/${s.id}">
       <div class="thumb">${s.category === 'restaurant' ? '🍣' : '🍵'}</div>
       <div class="card-body">
         ${s.perk?.text ? `<div class="perk-ribbon">🎁 ${t('perk')}</div>` : ''}
         <h3>${s.isDemo ? `<span class="demo-tag">${t('demoTag')}</span> ` : ''}${esc(s.name.text)}</h3>
-        <div class="sub">${esc(label(CATEGORIES, s.category))} · ${esc(L(a))}</div>
+        <div class="sub">${esc(label(CATEGORIES, s.category))} · ${esc(placeText(s))}</div>
         <div class="price-line">${price(s.priceJPY)} <span class="muted">${t('perPerson')}</span></div>
         ${s.localsOrder?.text ? `<div class="locals-order">🍢 <b>${t('localsOrder')}:</b> ${esc(s.localsOrder.text)}</div>` : ''}
         ${weekStrip(s.week)}
+        ${s.unavailable ? `<p class="na-note">${t('notOnDate')}</p>` : ''}
         ${localBar(s.localPct)}
         <div class="facts">
           ${s.notInGuidebooks ? `<span class="fact special">📖 ${t('notInGuidebooks')}</span>` : ''}
@@ -106,4 +107,14 @@ export function phrasesHtml(name = '', withTitle = true) {
   const fill = (x) => x.replaceAll('{name}', name || '___');
   return `<div class="section">${withTitle ? `<h4>🗣️ ${t('phrasesTitle')}</h4>` : ''}<p class="note">${t('phrasesNote')}</p>
     <div class="phrases">${PHRASES.map((p) => `<div class="phrase"><div class="ja" lang="ja">${esc(fill(p.ja))}</div><div class="romaji">${esc(fill(p.romaji))}</div><div class="en">${esc(fill(L(p)))}</div></div>`).join('')}</div></div>`;
+}
+
+/** 言語と通貨を選ぶ部品（メニュー・はじめての案内で使う） */
+export function langCurHtml() {
+  return `
+    <div class="label">${t('language')}</div>
+    <div class="pill-row">${LANGS.map((l) => `<button class="pill ${l.id === state.lang ? 'on' : ''}" data-lang="${l.id}">${l.label}</button>`).join('')}</div>
+    <div class="label" style="margin-top:14px">${t('currency')}</div>
+    <p class="note" style="margin:0 0 6px">${t('currencyNote')}</p>
+    <div class="pill-row">${CURRENCIES.map((c) => `<button class="pill ${c === (state.currency ?? 'JPY') ? 'on' : ''}" data-cur="${c}">${c === 'JPY' ? '円 JPY' : c}</button>`).join('')}</div>`;
 }

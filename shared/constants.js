@@ -95,18 +95,21 @@ export const PHRASES = [
 ];
 
 // 表示通貨（日本円が正。ほかは目安）
-// 旅行者の表示言語（お店の文は日本語から自動翻訳。mm＝MyMemoryの言語コード）
+// 旅行者の表示言語（お店の文は日本語から自動翻訳。mm＝MyMemoryの言語コード）。日本語を選ぶと原文のまま出す
 export const LANGS = [
   { id: 'en', label: 'English', short: 'EN', mm: 'en', locale: 'en' },
-  { id: 'zh', label: '中文', short: '中', mm: 'zh-CN', locale: 'zh-CN' },
+  { id: 'zh', label: '简体中文', short: '中', mm: 'zh-CN', locale: 'zh-CN' },
   { id: 'ko', label: '한국어', short: '한', mm: 'ko', locale: 'ko' },
+  { id: 'ja', label: '日本語', short: '日', mm: 'ja', locale: 'ja' },
 ];
 export const LANG_IDS = LANGS.map((l) => l.id);
+/** 日本語から自動翻訳する言語 */
+export const TR_LANGS = LANGS.filter((l) => l.id !== 'ja');
 
 // 地元のお客さんの割合（お店の申告・10刻み）
 export const LOCAL_PCTS = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0];
 
-export const CURRENCIES = ['SGD', 'USD', 'CNY', 'HKD', 'TWD', 'KRW', 'EUR'];
+export const CURRENCIES = ['JPY', 'SGD', 'USD', 'CNY', 'HKD', 'TWD', 'KRW', 'EUR']; // JPY＝円だけ表示
 
 export const LIMITS = {
   messageMaxChars: 500, // チャット・予約メッセージ（翻訳APIへの過剰な入力を防ぐ）
@@ -126,4 +129,89 @@ export const OPERATOR = {
   nameJa: 'ITSUMO 運営事務局（仮）',
   nameEn: 'ITSUMO Operations Office (provisional)',
   email: 'support@example.com',
+};
+
+// ============================================================
+//  日本全国：地方と都道府県（id は JIS の都道府県コード）。
+//  x, y は「タイル地図」（四角を並べた日本地図）での位置。
+// ============================================================
+export const REGIONS = [
+  { id: 'hokkaido', ja: '北海道', en: 'Hokkaido', zh: '北海道', ko: '홋카이도', color: '#7ec8e3' },
+  { id: 'tohoku', ja: '東北', en: 'Tohoku', zh: '东北', ko: '도호쿠', color: '#8fd1a8' },
+  { id: 'kanto', ja: '関東', en: 'Kanto', zh: '关东', ko: '간토', color: '#f2c46d' },
+  { id: 'chubu', ja: '中部', en: 'Chubu', zh: '中部', ko: '주부', color: '#b7d36b' },
+  { id: 'kinki', ja: '近畿', en: 'Kansai', zh: '关西', ko: '간사이', color: '#ff9f6b' },
+  { id: 'chugoku', ja: '中国', en: 'Chugoku', zh: '中国地区', ko: '주고쿠', color: '#c9a3e6' },
+  { id: 'shikoku', ja: '四国', en: 'Shikoku', zh: '四国', ko: '시코쿠', color: '#7fd6c8' },
+  { id: 'kyushu', ja: '九州・沖縄', en: 'Kyushu & Okinawa', zh: '九州・冲绳', ko: '규슈・오키나와', color: '#ff8fa3' },
+];
+
+const P = (id, region, ja, en, zh, ko, x, y) => ({ id, region, ja, en, zh, ko, x, y });
+export const PREFS = [
+  P('01', 'hokkaido', '北海道', 'Hokkaido', '北海道', '홋카이도', 12, 0),
+  P('02', 'tohoku', '青森県', 'Aomori', '青森县', '아오모리현', 12, 2),
+  P('03', 'tohoku', '岩手県', 'Iwate', '岩手县', '이와테현', 12, 3),
+  P('04', 'tohoku', '宮城県', 'Miyagi', '宫城县', '미야기현', 12, 4),
+  P('05', 'tohoku', '秋田県', 'Akita', '秋田县', '아키타현', 11, 3),
+  P('06', 'tohoku', '山形県', 'Yamagata', '山形县', '야마가타현', 11, 4),
+  P('07', 'tohoku', '福島県', 'Fukushima', '福岛县', '후쿠시마현', 12, 5),
+  P('08', 'kanto', '茨城県', 'Ibaraki', '茨城县', '이바라키현', 12, 7),
+  P('09', 'kanto', '栃木県', 'Tochigi', '栃木县', '도치기현', 12, 6),
+  P('10', 'kanto', '群馬県', 'Gunma', '群马县', '군마현', 11, 6),
+  P('11', 'kanto', '埼玉県', 'Saitama', '埼玉县', '사이타마현', 11, 7),
+  P('12', 'kanto', '千葉県', 'Chiba', '千叶县', '지바현', 12, 8),
+  P('13', 'kanto', '東京都', 'Tokyo', '东京都', '도쿄도', 11, 8),
+  P('14', 'kanto', '神奈川県', 'Kanagawa', '神奈川县', '가나가와현', 11, 9),
+  P('15', 'chubu', '新潟県', 'Niigata', '新潟县', '니가타현', 11, 5),
+  P('16', 'chubu', '富山県', 'Toyama', '富山县', '도야마현', 10, 5),
+  P('17', 'chubu', '石川県', 'Ishikawa', '石川县', '이시카와현', 9, 5),
+  P('18', 'chubu', '福井県', 'Fukui', '福井县', '후쿠이현', 8, 6),
+  P('19', 'chubu', '山梨県', 'Yamanashi', '山梨县', '야마나시현', 10, 7),
+  P('20', 'chubu', '長野県', 'Nagano', '长野县', '나가노현', 10, 6),
+  P('21', 'chubu', '岐阜県', 'Gifu', '岐阜县', '기후현', 9, 6),
+  P('22', 'chubu', '静岡県', 'Shizuoka', '静冈县', '시즈오카현', 10, 8),
+  P('23', 'chubu', '愛知県', 'Aichi', '爱知县', '아이치현', 9, 7),
+  P('24', 'kinki', '三重県', 'Mie', '三重县', '미에현', 9, 8),
+  P('25', 'kinki', '滋賀県', 'Shiga', '滋贺县', '시가현', 8, 7),
+  P('26', 'kinki', '京都府', 'Kyoto', '京都府', '교토부', 7, 7),
+  P('27', 'kinki', '大阪府', 'Osaka', '大阪府', '오사카부', 7, 8),
+  P('28', 'kinki', '兵庫県', 'Hyogo', '兵库县', '효고현', 6, 7),
+  P('29', 'kinki', '奈良県', 'Nara', '奈良县', '나라현', 8, 8),
+  P('30', 'kinki', '和歌山県', 'Wakayama', '和歌山县', '와카야마현', 8, 9),
+  P('31', 'chugoku', '鳥取県', 'Tottori', '鸟取县', '돗토리현', 5, 6),
+  P('32', 'chugoku', '島根県', 'Shimane', '岛根县', '시마네현', 4, 6),
+  P('33', 'chugoku', '岡山県', 'Okayama', '冈山县', '오카야마현', 5, 7),
+  P('34', 'chugoku', '広島県', 'Hiroshima', '广岛县', '히로시마현', 4, 7),
+  P('35', 'chugoku', '山口県', 'Yamaguchi', '山口县', '야마구치현', 3, 7),
+  P('36', 'shikoku', '徳島県', 'Tokushima', '德岛县', '도쿠시마현', 5, 10),
+  P('37', 'shikoku', '香川県', 'Kagawa', '香川县', '가가와현', 5, 9),
+  P('38', 'shikoku', '愛媛県', 'Ehime', '爱媛县', '에히메현', 4, 9),
+  P('39', 'shikoku', '高知県', 'Kochi', '高知县', '고치현', 4, 10),
+  P('40', 'kyushu', '福岡県', 'Fukuoka', '福冈县', '후쿠오카현', 2, 8),
+  P('41', 'kyushu', '佐賀県', 'Saga', '佐贺县', '사가현', 1, 8),
+  P('42', 'kyushu', '長崎県', 'Nagasaki', '长崎县', '나가사키현', 1, 9),
+  P('43', 'kyushu', '熊本県', 'Kumamoto', '熊本县', '구마모토현', 2, 9),
+  P('44', 'kyushu', '大分県', 'Oita', '大分县', '오이타현', 3, 8),
+  P('45', 'kyushu', '宮崎県', 'Miyazaki', '宫崎县', '미야자키현', 3, 9),
+  P('46', 'kyushu', '鹿児島県', 'Kagoshima', '鹿儿岛县', '가고시마현', 2, 10),
+  P('47', 'kyushu', '沖縄県', 'Okinawa', '冲绳县', '오키나와현', 0, 12),
+];
+export const prefOf = (id) => PREFS.find((p) => p.id === id);
+/** 住所の先頭から都道府県を見つける */
+export const prefFromAddress = (addr = '') => PREFS.find((p) => String(addr).replace(/^日本、?\s*(〒?\d{3}-?\d{4}\s*)?/, '').startsWith(p.ja)) ?? null;
+/** 住所から市区町村（「〇〇郡〇〇町」「〇〇市」「〇〇区」など）を取り出す */
+export function cityFromAddress(addr = '') {
+  const p = prefFromAddress(addr);
+  if (!p) return '';
+  const rest = String(addr).slice(String(addr).indexOf(p.ja) + p.ja.length);
+  const m = rest.match(/^(.+?郡.+?[町村]|.+?市|.+?区|.+?[町村])/);
+  return m ? m[1] : '';
+}
+
+// 前の版の「エリア」（uji / kyoto / osaka / nara）で登録された店舗の、都道府県・市・駅
+export const LEGACY_AREAS = {
+  uji: { pref: '26', city: { ja: '宇治市', en: 'Uji', zh: '宇治市', ko: '우지시' }, station: { ja: 'JR宇治駅', en: 'JR Uji Station', zh: 'JR宇治站', ko: 'JR 우지역' } },
+  kyoto: { pref: '26', city: { ja: '京都市', en: 'Kyoto', zh: '京都市', ko: '교토시' }, station: { ja: '京都駅', en: 'Kyoto Station', zh: '京都站', ko: '교토역' } },
+  osaka: { pref: '27', city: { ja: '大阪市', en: 'Osaka', zh: '大阪市', ko: '오사카시' }, station: { ja: '大阪駅', en: 'Osaka Station', zh: '大阪站', ko: '오사카역' } },
+  nara: { pref: '29', city: { ja: '奈良市', en: 'Nara', zh: '奈良市', ko: '나라시' }, station: { ja: '近鉄奈良駅', en: 'Kintetsu-Nara Station', zh: '近铁奈良站', ko: '긴테쓰나라역' } },
 };
