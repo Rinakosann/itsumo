@@ -3,7 +3,7 @@ import { api, bad, notFound, str, oneOf, isDate } from '../server/http.js';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../server/db.js';
 import { requireUser } from '../server/auth.js';
-import { jaToAll, fullyTranslated } from '../server/translate.js';
+import { jaToAll, jaToAllMany, fullyTranslated } from '../server/translate.js';
 import { geocodeJa, nearStations } from '../server/geo.js';
 import { isPast } from '../shared/booking.js';
 import { CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, CANCEL_REASONS, LIMITS, TIPS, LOCAL_PCTS, PREFS, prefFromAddress, cityFromAddress } from '../shared/constants.js';
@@ -126,12 +126,17 @@ export default api({
     if (!v.stationJa) missing.push('最寄り駅');
     if (v.stationKm == null) missing.push('最寄り駅からの距離（0より大きい数）');
     // 英語・中国語・韓国語に自動翻訳（変わっていない文は訳し直さない）
-    const tr = async (prevVal, ja) => (ja ? keep(prevVal, ja) ?? (await jaToAll(ja)) : null);
-    const [name0, description0, bring, localsOrder, welcome, tipsNote, popularName, perk, city, station] = await Promise.all([
-      tr(prev?.name, v.nameJa), tr(prev?.description, v.descriptionJa), tr(prev?.extra?.bring, v.bringJa),
-      tr(prev?.localsOrder, v.localsOrderJa), tr(prev?.welcome, v.welcomeJa), tr(prev?.tipsNote, v.tipsNoteJa),
-      tr(prev?.popular?.name, v.popularJa), tr(prev?.perk, v.perkJa), tr(prev?.city, v.cityJa), tr(prev?.station, v.stationJa),
-    ]);
+    // 変わった文だけを集めて、まとめて1回で翻訳する（Gemini の無料枠の回数に当たりにくい）
+    const fields = [
+      [prev?.name, v.nameJa], [prev?.description, v.descriptionJa], [prev?.extra?.bring, v.bringJa],
+      [prev?.localsOrder, v.localsOrderJa], [prev?.welcome, v.welcomeJa], [prev?.tipsNote, v.tipsNoteJa],
+      [prev?.popular?.name, v.popularJa], [prev?.perk, v.perkJa], [prev?.city, v.cityJa], [prev?.station, v.stationJa],
+    ];
+    const kept = fields.map(([pv, ja]) => (ja ? keep(pv, ja) : null));
+    const need = fields.map(([, ja], i) => (ja && !kept[i] ? ja : null));
+    const fresh = await jaToAllMany(need.filter(Boolean));
+    let k = 0;
+    const [name0, description0, bring, localsOrder, welcome, tipsNote, popularName, perk, city, station] = fields.map(([, ja], i) => (!ja ? null : kept[i] ?? fresh[k++]));
     const name = name0 ?? { ja: '' };
     const description = description0 ?? { ja: '' };
     // 架空の店舗を防ぐため、公開には住所の確認（国土地理院の住所検索かGoogleマップで実在を確認）が必要
