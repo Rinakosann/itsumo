@@ -79,10 +79,10 @@ export async function render(view) {
         </div>
         <button class="btn ${sel.near ? 'primary' : ''}" data-near style="margin-top:10px">${t('nearMe')}</button>
         <div class="when-row">
-          <label class="label">${t('date')}<input type="date" data-f="date" value="${sel.date || ''}" min="${todayJST()}" max="${addDays(todayJST(), LIMITS.bookingDaysAhead)}" />
+          <label class="label">${t('date')}<input type="date" data-f="date" value="${esc(sel.date || '')}" min="${todayJST()}" max="${addDays(todayJST(), LIMITS.bookingDaysAhead)}" />
             ${sel.date ? `<button type="button" class="link small" data-nodate>${t('anyDate')}</button>` : `<span class="note">${t('anyDate')}</span>`}</label>
           <div class="label">${t('people')}
-            <div class="stepper"><button type="button" data-people="-1" aria-label="-">−</button><b>${sel.people}</b><button type="button" data-people="1" aria-label="+">＋</button></div>
+            <div class="stepper"><button type="button" data-people="-1" aria-label="-">−</button><b>${esc(sel.people)}</b><button type="button" data-people="1" aria-label="+">＋</button></div>
           </div>
         </div>
         <button class="btn primary block" data-go="list">${t('search')}</button>

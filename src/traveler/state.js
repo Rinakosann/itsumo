@@ -14,6 +14,19 @@ function guessLang() {
   return l.startsWith('zh') ? 'zh' : l.startsWith('ko') ? 'ko' : 'en';
 }
 
+/** 端末に保存された「探す条件」は書き換えられることがあるので、正しい形のものだけ使う */
+function cleanSearch(v) {
+  const o = v && typeof v === 'object' ? v : {};
+  const near = o.near && Number.isFinite(o.near.lat) && Number.isFinite(o.near.lng) ? { lat: o.near.lat, lng: o.near.lng } : null;
+  return {
+    region: /^[a-z]{1,10}$/.test(o.region ?? '') ? o.region : '',
+    pref: /^\d{2}$/.test(o.pref ?? '') ? o.pref : '',
+    near,
+    date: /^\d{4}-\d{2}-\d{2}$/.test(o.date ?? '') ? o.date : '',
+    people: Math.min(20, Math.max(1, Math.round(Number(o.people)) || 2)),
+  };
+}
+
 export const state = {
   user: null,
   lang: LANG_IDS.includes(storage('tlm.lang', null)) ? storage('tlm.lang', null) : guessLang(),
@@ -24,7 +37,7 @@ export const state = {
   view: storage('tlm.view', 'list'),
   greetClosed: storage('tlm.greetClosed', false),
   // 探す条件（日本全国から）：地方・都道府県・現在地・日付・人数
-  search: { region: '', pref: '', near: null, date: '', people: 2, ...storage('tlm.search', {}) },
+  search: cleanSearch(storage('tlm.search', {})),
   keroOn: storage('tlm.kero', true), // 右下のケロを表示するか（メニューで切り替え）
   unread: 0,
   visitorId: storage('tlm.visitor', null) ?? (() => { const v = Math.random().toString(36).slice(2); store('tlm.visitor', v); return v; })(),
