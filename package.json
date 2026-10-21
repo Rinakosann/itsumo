@@ -16,7 +16,8 @@
     "db:prepare": "dotenv -e .env.local -- node scripts/prepare-db.js",
     "db:studio": "dotenv -e .env.local -- prisma studio",
     "demo:add": "dotenv -e .env.local -- node prisma/demo-shops.js add",
-    "demo:remove": "dotenv -e .env.local -- node prisma/demo-shops.js remove"
+    "demo:remove": "dotenv -e .env.local -- node prisma/demo-shops.js remove",
+    "gemini:setup": "zsh scripts/setup-gemini.sh"
   },
   "prisma": {
     "schema": "prisma/schema.prisma"
