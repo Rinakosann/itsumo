@@ -51,15 +51,18 @@ export async function renderBookings(view) {
       <h3>予約をキャンセル</h3>
       <p class="small">理由を選んでください。理由はお客様の言語（英語・中国語・韓国語）に翻訳して、マイ予約に表示されます。</p>
       <form class="form" id="cf">
-        ${CANCEL_REASONS.map((r, i) => `<label class="check"><input type="radio" name="reason" value="${r.id}" ${i === 0 ? 'checked' : ''}/> ${r.ja}</label>`).join('')}
+        ${CANCEL_REASONS.map((r, i) => `<label class="check radio"><input type="radio" name="reason" value="${r.id}" ${i === 0 ? 'checked' : ''}/> <span>${r.ja}</span></label>`).join('')}
         <label>ひとこと（任意・日本語で）<input name="note" maxlength="300" placeholder="例：台風のため臨時休業します。申し訳ありません。" /></label>
         <button class="btn danger block" type="submit">キャンセルする</button>
       </form>`);
     content.querySelector('#cf').onsubmit = async (ev) => {
       ev.preventDefault();
       const fd = new FormData(ev.target);
+      const btn = ev.target.querySelector('button[type=submit]');
+      if (btn.disabled) return;
+      btn.disabled = true; btn.textContent = 'キャンセル中…'; // 連打で2回送らない（理由の翻訳も1回だけ）
       try { await post('biz', 'cancel', { id, reason: fd.get('reason'), note: fd.get('note') }); closeSheet(); toast('キャンセルしました'); renderBookings(view); }
-      catch (er) { toast(errJa(er)); }
+      catch (er) { toast(errJa(er)); btn.disabled = false; btn.textContent = 'キャンセルする'; }
     };
   };
 }
@@ -106,7 +109,7 @@ export async function renderThread(view, id) {
     f.text.addEventListener('input', cnt); cnt();
     f.onsubmit = async (e) => {
       e.preventDefault();
-      if (!f.text.value.trim()) return;
+      if (!f.text.value.trim() || f.querySelector('button').disabled) return; // 送信中は二重に送らない
       f.querySelector('button').disabled = true;
       try { const r = await post('chat', 'send', { threadId: id, text: f.text.value }); if (r.translateFailed) toast('翻訳できなかったため、日本語のまま届きます'); renderThread(view, id); }
       catch (er) { toast(errJa(er)); f.querySelector('button').disabled = false; }
@@ -187,7 +190,11 @@ export function renderAccount(view, user, onLogout) {
       </div>
       <div class="section"><button class="btn block" data-logout>ログアウト</button><button class="btn block danger" data-delete>退会する</button></div>
     </section>`;
-  $('#f').onsubmit = async (e) => { e.preventDefault(); await post('auth', 'profile', { name: e.target.name.value }); toast('保存しました'); };
+  $('#f').onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button'); if (btn.disabled) return; btn.disabled = true;
+    try { await post('auth', 'profile', { name: e.target.name.value }); toast('保存しました'); } finally { btn.disabled = false; }
+  };
   view.onclick = async (e) => {
     if (e.target.closest('[data-logout]')) { await post('auth', 'logout'); onLogout(); }
     if (e.target.closest('[data-delete]')) {

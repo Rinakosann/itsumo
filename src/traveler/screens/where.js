@@ -14,18 +14,42 @@ import { todayJST, addDays } from '../../../shared/time.js';
 const CELL = 30; // タイル1つの大きさ
 const regionOf = (id) => REGIONS.find((r) => r.id === id);
 
-/** タイル地図。地方を選ぶ前は地方ごとに色分け、選んだ後はその地方の都道府県だけ明るくする */
+/** マスに入れる名前：選んだ言語で（日本語・中国語は「府・県」などを外す）。北海道はそのまま */
+function tileLabel(p) {
+  const name = L(p);
+  if (state.lang === 'ja' || state.lang === 'zh') return p.id === '01' ? name : name.replace(/[都府県县]$/, '');
+  if (state.lang === 'ko') return name.replace(/(도|부|현)$/, '');
+  return name;
+}
+/** マスの幅に収まる文字の大きさ */
+function fitSize(label) {
+  const latin = /^[\x00-\x7f]+$/.test(label);
+  const w = latin ? label.length * 0.58 : label.length;
+  return Math.min(9, (CELL - 6) / w).toFixed(2);
+}
+
+/** タイル地図。地方を選ぶ前は全国、選んだ後はその地方を拡大して、都道府県の名前を読みやすくする */
 function tileMap(sel, counts) {
-  const w = 13 * CELL; const h = 13 * CELL;
-  return `<svg viewBox="-4 -4 ${w + 8} ${h + 8}" class="tilemap" role="img" aria-label="${esc(t('japan'))}">
+  const inRegion = sel.region ? PREFS.filter((p) => p.region === sel.region) : PREFS;
+  const xs = inRegion.map((p) => p.x); const ys = inRegion.map((p) => p.y);
+  const pad = sel.region ? 0.6 : 0;
+  let x0 = (Math.min(...xs) - pad) * CELL; let y0 = (Math.min(...ys) - pad) * CELL;
+  let w = (Math.max(...xs) - Math.min(...xs) + 1 + pad * 2) * CELL; let h = (Math.max(...ys) - Math.min(...ys) + 1 + pad * 2) * CELL;
+  // 縦横の比を、地図の枠（横長）に近づける
+  const ratio = 1.15;
+  if (w / h < ratio) { const nw = h * ratio; x0 -= (nw - w) / 2; w = nw; } else { const nh = w / ratio; y0 -= (nh - h) / 2; h = nh; }
+  if (!sel.region) { x0 = -4; y0 = -4; w = 13 * CELL + 8; h = 13 * CELL + 8; }
+  return `<svg viewBox="${x0} ${y0} ${w} ${h}" class="tilemap ${sel.region ? 'zoomed' : ''}" role="img" aria-label="${esc(t('japan'))}">
     ${PREFS.map((p) => {
       const r = regionOf(p.region);
       const active = !sel.region || sel.region === p.region;
       const on = sel.pref === p.id;
       const n = counts[p.id] ?? 0;
+      const label = tileLabel(p);
       return `<g class="tile ${active ? '' : 'dim'} ${on ? 'on' : ''}" data-tile="${p.id}" data-region="${p.region}" tabindex="0">
+        <title>${esc(L(p))}</title>
         <rect x="${p.x * CELL}" y="${p.y * CELL}" width="${CELL - 3}" height="${CELL - 3}" rx="6" fill="${r.color}"/>
-        <text x="${p.x * CELL + (CELL - 3) / 2}" y="${p.y * CELL + 17}" text-anchor="middle">${esc(p.ja.replace(/[都府県]$/, '').slice(0, 2))}</text>
+        <text x="${p.x * CELL + (CELL - 3) / 2}" y="${p.y * CELL + (CELL - 3) / 2}" dominant-baseline="central" text-anchor="middle" style="font-size:${fitSize(label)}px">${esc(label)}</text>
         ${n ? `<circle cx="${p.x * CELL + CELL - 6}" cy="${p.y * CELL + 2}" r="7" class="cnt"/><text class="cnt-t" x="${p.x * CELL + CELL - 6}" y="${p.y * CELL + 5.5}" text-anchor="middle">${n}</text>` : ''}
       </g>`;
     }).join('')}

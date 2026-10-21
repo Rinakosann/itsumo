@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../server/db.js';
 import { requireUser } from '../server/auth.js';
 import { jaToAll, fullyTranslated } from '../server/translate.js';
-import { geocodeJa } from '../server/geo.js';
+import { geocodeJa, nearStations } from '../server/geo.js';
 import { isPast } from '../shared/booking.js';
 import { CATEGORIES, CUSTOMERS, YEARS, PAYMENTS, DIETARY, MENU_STYLES, CUTOFFS, CANCEL_REASONS, LIMITS, TIPS, LOCAL_PCTS, PREFS, prefFromAddress, cityFromAddress } from '../shared/constants.js';
 import { todayJST, addDays } from '../shared/time.js';
@@ -44,14 +44,14 @@ function readShop(b) {
       // 日本全国：都道府県・市区町村は住所から自動で決める（選び直しもできる）
       pref: need(opt(b.pref, PREFS) ?? prefFromAddress(str(b.address, { max: 200 }))?.id ?? null, '都道府県（住所の先頭に入れてください）'),
       cityJa: str(b.city, { max: 40 }) || cityFromAddress(str(b.address, { max: 200 })),
-      stationJa: need(str(b.stationName, { max: 40 }), '最寄り駅'),
+      stationJa: str(b.stationName, { max: 40 }),
       descriptionJa: need(str(b.description, { max: LIMITS.descriptionMaxChars }), '説明文'),
       priceJPY: need(price != null && price >= 0 && price <= 1_000_000 ? Math.round(price) : null, '料金'),
       durationMin: need(duration != null && duration >= 10 && duration <= 1440 ? Math.round(duration) : null, '所要時間'),
       payment: need(opt(b.payment, PAYMENTS), '支払い方法'),
       customers: need(opt(b.customers, CUSTOMERS), '客層'),
       years: need(opt(b.years, YEARS), '営業年数'),
-      stationKm: need(km != null && km >= 0 && km <= 100 ? Math.round(km * 10) / 10 : null, '最寄り駅からの距離'),
+      stationKm: km != null && km > 0 && km <= 100 ? Math.max(0.1, Math.round(km * 10) / 10) : null, // 0 は未入力とみなす
       link: link || null,
       lat: num(b.lat), lng: num(b.lng), placeId: str(b.placeId, { max: 300 }) || null,
       postal: str(b.postal, { max: 8 }).replace(/[^0-9-]/g, '') || null,
@@ -113,6 +113,18 @@ export default api({
     const { data: v, missing } = readShop(ctx.body.shop ?? {});
     const wantPublish = ctx.body.publish !== false;
 
+    // 住所が未確認なら、保存のときにサーバーでも確認する（押し忘れても公開が止まらないように）
+    if (!v.addressVerified && v.address) {
+      const hit = await geocodeJa(v.address);
+      if (hit) { v.addressVerified = true; if (v.lat == null) { v.lat = hit.lat; v.lng = hit.lng; } }
+    }
+    // 最寄り駅・距離が空なら、位置から近くの駅を自動で入れる（日本全国）
+    if ((!v.stationJa || v.stationKm == null) && v.lat != null && v.lng != null) {
+      const [st] = await nearStations(v.lat, v.lng);
+      if (st) { if (!v.stationJa) v.stationJa = st.name; if (v.stationKm == null) v.stationKm = st.km; }
+    }
+    if (!v.stationJa) missing.push('最寄り駅');
+    if (v.stationKm == null) missing.push('最寄り駅からの距離（0より大きい数）');
     // 英語・中国語・韓国語に自動翻訳（変わっていない文は訳し直さない）
     const tr = async (prevVal, ja) => (ja ? keep(prevVal, ja) ?? (await jaToAll(ja)) : null);
     const [name0, description0, bring, localsOrder, welcome, tipsNote, popularName, perk, city, station] = await Promise.all([
@@ -122,11 +134,6 @@ export default api({
     ]);
     const name = name0 ?? { ja: '' };
     const description = description0 ?? { ja: '' };
-    // 住所が未確認なら、保存のときにサーバーでも確認する（押し忘れても公開が止まらないように）
-    if (!v.addressVerified && v.address) {
-      const hit = await geocodeJa(v.address);
-      if (hit) { v.addressVerified = true; if (v.lat == null) { v.lat = hit.lat; v.lng = hit.lng; } }
-    }
     // 架空の店舗を防ぐため、公開には住所の確認（国土地理院の住所検索かGoogleマップで実在を確認）が必要
     if (!v.addressVerified) missing.push('住所の確認（「住所を確認する」を押す）');
     const publish = wantPublish && missing.length === 0;

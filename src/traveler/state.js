@@ -68,9 +68,13 @@ export async function loadRates() {
 }
 
 export async function loadShops(force) {
-  if (!state.shops || force) {
-    const { date, people } = state.search;
-    state.shops = (await get('shops', 'list', { lang: state.lang, date: date || '', people: people || 1 })).items;
+  // 言語・日付・人数が変わったら読み直す。読み込み中に条件が変わったら、古い結果は使わない
+  const { date, people } = state.search;
+  const key = `${state.lang}|${date || ''}|${people || 1}`;
+  if (!state.shops || force || state.shopsKey !== key) {
+    const items = (await get('shops', 'list', { lang: state.lang, date: date || '', people: people || 1 })).items;
+    if (key === `${state.lang}|${state.search.date || ''}|${state.search.people || 1}`) { state.shops = items; state.shopsKey = key; }
+    else return loadShops(true);
   }
   return state.shops;
 }

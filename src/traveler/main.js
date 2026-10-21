@@ -84,9 +84,9 @@ function openLangCur() {
     const c = openSheet(`<h3>${t('langCurTitle')}</h3>${langCurHtml()}<button class="btn primary block" data-done style="margin-top:16px">${t('done')}</button>`);
     c.onclick = (e) => {
       const l = e.target.closest('[data-lang]')?.dataset.lang;
-      if (l) { changeLang(l); draw(); return; }
+      if (l) { changeLang(l); draw(); route({ keepSheet: true }); return; } // 後ろの画面もすぐ切り替える
       const cur = e.target.closest('[data-cur]')?.dataset.cur;
-      if (cur) { setCurrency(cur); if (state.user) post('auth', 'profile', { currency: cur }).catch(() => {}); draw(); return; }
+      if (cur) { setCurrency(cur); if (state.user) post('auth', 'profile', { currency: cur }).catch(() => {}); draw(); route({ keepSheet: true }); return; }
       if (e.target.closest('[data-done]')) { closeSheet(); route(); }
     };
   };
@@ -102,6 +102,9 @@ document.addEventListener('lang-changed', () => { renderHeader(); renderKero(); 
 
 // ---------- 右下の忍者ケロ（画面ごとにひとこと。メニューで消せる） ----------
 let keroBubble = true;
+// 吹き出しは、画面の種類ごとに最初の1回だけ自動で出す（本文にかぶらないように）
+const keroSeen = (() => { try { return new Set(JSON.parse(sessionStorage.getItem('tlm.keroSeen') ?? '[]')); } catch { return new Set(); } })();
+function markKeroSeen(name) { keroSeen.add(name); try { sessionStorage.setItem('tlm.keroSeen', JSON.stringify([...keroSeen])); } catch { /* ignore */ } }
 function renderKero() {
   const el = $('#kero');
   const line = KERO_LINE[routeName()];
@@ -109,7 +112,7 @@ function renderKero() {
   el.innerHTML = `${keroBubble && line ? `<div class="kero-bubble"><p>${esc(t(line))}</p><button class="link" data-kero-hide>${t('keroHide')}</button></div>` : ''}<button class="kero-btn" data-kero-tap aria-label="Kero">${AVATAR_NINJA}</button>`;
   // 吹き出しは少したったら消える（画面のボタンにかぶらないように）。ケロを押すとまた出る
   clearTimeout(renderKero.timer);
-  if (keroBubble && line) renderKero.timer = setTimeout(() => { keroBubble = false; renderKero(); }, 6000);
+  if (keroBubble && line) renderKero.timer = setTimeout(() => { keroBubble = false; renderKero(); }, 4000);
 }
 $('#kero').addEventListener('click', (e) => {
   if (e.target.closest('[data-kero-hide]')) { keroBubble = false; renderKero(); }
@@ -123,8 +126,10 @@ async function refreshBadges() {
   renderHeader();
 }
 
-async function route() {
-  closeSheet();
+let routeSeq = 0;
+async function route({ keepSheet = false } = {}) {
+  const seq = ++routeSeq;
+  if (!keepSheet) closeSheet();
   closeDrawer();
   const [path, qs] = location.hash.replace(/^#\/?/, '').split('?');
   const [name = '', id] = path.split('/');
@@ -133,11 +138,13 @@ async function route() {
   view.onclick = null; view.onchange = null; view.oninput = null; view.onkeydown = null;
   document.body.dataset.route = name;
   renderHeader();
-  keroBubble = true;
+  keroBubble = !keroSeen.has(name);
+  markKeroSeen(name);
   renderKero();
   view.innerHTML = `<div class="loader"><div class="lane">${['maguro', 'salmon', 'tamago', 'ebi', 'ikura'].map((k) => `<span>${sushi(k)}</span>`).join('')}</div><p>${t('loadingSushi')}</p></div>`;
   try {
     await (ROUTES[name] ?? list.render)(view, id, new URLSearchParams(qs));
+    if (seq !== routeSeq) return; // あとから別の描画が始まった
   } catch (e) {
     console.error(e);
     // 何が起きたかと、次にできること
@@ -145,7 +152,7 @@ async function route() {
     view.onclick = (ev) => { if (ev.target.closest('[data-retry]')) route(); };
   }
   renderKero();
-  window.scrollTo(0, 0);
+  if (!keepSheet) window.scrollTo(0, 0);
 }
 
 window.addEventListener('hashchange', route);

@@ -79,12 +79,12 @@ const HANDS = {
   <circle cx="134" cy="121" r="8" fill="${C.body}" stroke="${C.line}" stroke-width="2"/>`,
 };
 
-/** 忍者のはちまき（額当てつき・結び目の布が風になびく） */
+/** 忍者のはちまき：額（目の後ろ）に巻く。目より先に描くので、目が上に重なる。結び目の布は左になびく */
 const NINJA_BAND = `
-  <path d="M30 70q-16-2-26-14q12 4 22 2z" fill="#2b3a67"/><path d="M30 74q-14 4-26 0q12-2 22-6z" fill="#34477d"/>
-  <path d="M24 60Q80 76 136 60L136 72Q80 88 24 72Z" fill="#2b3a67" stroke="#1c2648" stroke-width="1.6" stroke-linejoin="round"/>
-  <rect x="70" y="64" width="20" height="13" rx="3" fill="#cfd6e6" stroke="#4a5470" stroke-width="1.4"/>
-  <path d="M80 67q-4 3 0 7q4-4 0-7z" fill="#4a5470"/>`;
+  <path d="M30 44q-16-4-27-16q12 3 22 3z" fill="#2b3a67"/><path d="M30 48q-15 3-27-2q12-1 21-6z" fill="#34477d"/>
+  <path d="M26 38Q80 50 134 38L134 48Q80 60 26 48Z" fill="#2b3a67" stroke="#1c2648" stroke-width="1.6" stroke-linejoin="round"/>
+  <rect x="73" y="42" width="14" height="10" rx="2.5" fill="#cfd6e6" stroke="#4a5470" stroke-width="1.2"/>
+  <path d="M80 44.5q-3 2.5 0 5q3-2.5 0-5z" fill="#4a5470"/>`;
 
 /** 忍者の首巻き */
 const NINJA_SCARF = `<!-- 忍者の首巻き -->
@@ -244,9 +244,9 @@ export const FULL_LANTERN = frogFull({ hand: 'lantern' });
 
 /** 顔まわり（忍者）：はちまきつき */
 export const AVATAR_NINJA = AVATAR.replace(`${EYE(18, 23, 10.5)}`, `
-  <path d="M8 36q-7 1-8-6q4 3 8 2z" fill="#2b3a67"/>
-  <path d="M5 30Q32 40 59 30L59 36Q32 46 5 36Z" fill="#2b3a67" stroke="#1c2648" stroke-width="1"/>
-  <rect x="27" y="32" width="10" height="7" rx="1.5" fill="#cfd6e6" stroke="#4a5470" stroke-width=".8"/>
+  <path d="M9 28q-7-1-9-7q4 2 8 2z" fill="#2b3a67"/>
+  <path d="M7 22Q32 30 57 22L57 27Q32 35 7 27Z" fill="#2b3a67" stroke="#1c2648" stroke-width=".8"/>
+  <rect x="29" y="25" width="6" height="5" rx="1.2" fill="#cfd6e6" stroke="#4a5470" stroke-width=".6"/>
   ${EYE(18, 23, 10.5)}`);
 
 export { SHURIKEN };

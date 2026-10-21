@@ -82,7 +82,7 @@ export async function renderEdit(view, id) {
         </div>
         <div class="form-row">
           <label>最寄り駅＊<input name="stationName" maxlength="40" value="${esc(curStation)}" placeholder="例：宇治駅" /></label>
-          <label>駅からの距離（km）＊<input name="stationKm" type="number" min="0" max="100" step="0.1" value="${s.stationKm ?? ''}" /></label>
+          <label>駅からの距離（km）＊<input name="stationKm" type="number" min="0.1" max="100" step="0.1" value="${s.stationKm ?? ''}" /></label>
         </div>
         <div id="station-pick" class="chips"></div>
         <span class="muted small" id="km-hint">住所を確認すると、近くの駅の候補が出ます（距離は直線距離。道のりに合わせて直してください）。</span>
@@ -155,7 +155,8 @@ export async function renderEdit(view, id) {
   const suggestStation = async (p) => {
     const { items } = await get('geo', 'station', { lat: p.lat, lng: p.lng }).catch(() => ({ items: [] }));
     if (!items.length) { $('#km-hint').textContent = '近くの駅が見つかりませんでした。最寄り駅を手で入れてください。'; return; }
-    if (!f.stationName.value) { f.stationName.value = items[0].name; f.stationKm.value = items[0].km; }
+    // 駅名か距離が空（または0）なら、いちばん近い駅を入れる
+    if (!f.stationName.value || !(Number(f.stationKm.value) > 0)) { f.stationName.value = items[0].name; f.stationKm.value = items[0].km; }
     $('#station-pick').innerHTML = items.map((x) => `<button type="button" class="chip" data-station="${esc(x.name)}" data-km="${x.km}">🚉 ${esc(x.name)}（${esc(x.line)}）約${x.km}km</button>`).join('');
     $('#km-hint').textContent = '候補を押すと入ります。距離は直線距離なので、道のりに合わせて直してください。';
   };
@@ -183,12 +184,18 @@ export async function renderEdit(view, id) {
   f.address.addEventListener('input', () => { pos.verified = false; $('#verified').innerHTML = '<span class="muted">住所が変わりました。もう一度確認してください</span>'; });
   view.onclick = async (e) => {
     if (e.target.closest('[data-zip]')) {
+      const zb = e.target.closest('[data-zip]'); if (zb.disabled) return;
+      zb.disabled = true; const zl = zb.textContent; zb.textContent = '検索中…';
       const r = await get('geo', 'zip', { code: f.postal.value }).catch(() => ({ found: false }));
+      zb.disabled = false; zb.textContent = zl;
       if (r.found) { f.address.value = r.address; fillPrefCity(); f.address.focus(); toast('住所を入れました。続けて番地を入れてください'); } else toast('郵便番号から住所が見つかりませんでした');
     }
     if (e.target.closest('[data-verify]')) {
       if (!f.address.value.trim()) return toast('住所を入れてください');
+      const vb = e.target.closest('[data-verify]'); if (vb.disabled) return;
+      vb.disabled = true; const vl = vb.textContent; vb.textContent = '確認中…';
       const r = await get('geo', 'address', { q: f.address.value }).catch(() => ({ found: false }));
+      vb.disabled = false; vb.textContent = vl;
       if (r.found) {
         if (!pos.placeId) { pos.lat = r.lat; pos.lng = r.lng; }
         pos.verified = true;

@@ -57,7 +57,7 @@ export async function renderThread(view, id, query) {
     f.text.addEventListener('input', cnt); cnt();
     f.onsubmit = async (e) => {
       e.preventDefault();
-      if (!f.text.value.trim()) return;
+      if (!f.text.value.trim() || f.querySelector('button').disabled) return; // 送信中は二重に送らない
       f.querySelector('button').disabled = true;
       try {
         const res = await post('chat', 'send', id === 'new' ? { shopId: query.get('shop'), text: f.text.value } : { threadId: id, text: f.text.value });

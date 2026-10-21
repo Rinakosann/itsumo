@@ -186,12 +186,14 @@ body.traveler[data-route="place"] .char-fab { bottom: calc(var(--tabbar-h) + env
 /* ---------- Forms ---------- */
 .form { display: grid; gap: 12px; }
 .form label, .label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
-.form input:not([type=checkbox]), .form select, .form textarea, select {
+.form input:not([type=checkbox]):not([type=radio]), .form select, .form textarea, select {
   width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink);
 }
 .form textarea { min-height: 80px; resize: vertical; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .form label.check { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 14px; }
+.form label.check input { flex: none; width: auto; margin: 0; }
+.form label.check.radio { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; font-size: 16px; white-space: nowrap; }
 .form label.inline { grid-template-columns: 28px 1fr; align-items: center; }
 .checks { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip-check { display: inline-flex !important; align-items: center; gap: 4px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink) !important; }
@@ -736,3 +738,14 @@ body.night .chip.on { color: #2a1405; }
 .wk-av { width: 46px; height: 46px; flex: none; animation: hop 2.4s ease-in-out infinite; }
 .wk-av svg { width: 100%; height: 100%; }
 @media (prefers-reduced-motion: reduce) { .wk-av { animation: none; } }
+
+/* 事業者のヘッダー：狭い画面でも1行に（名前は省略して表示） */
+body.business .app-header { gap: 10px; flex-wrap: nowrap; }
+body.business .brand { min-width: 0; flex: none; white-space: nowrap; }
+body.business .brand small { white-space: nowrap; }
+body.business .app-header #who { min-width: 0; max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 400px) { body.business .brand-name { font-size: 15px; letter-spacing: .04em; } body.business .brand small { font-size: 11px; } }
+
+.tilemap { transition: none; }
+.tilemap.zoomed .tile.dim { opacity: .15; }
+.tile text:not(.cnt-t) { font-weight: 700; }
