@@ -57,3 +57,9 @@ npm run demo:add      # 入れる（入れ直し）
 npm run demo:remove   # 消す
 ```
 本番に対しては、`npx vercel env pull` した環境変数で `node prisma/demo-shops.js add|remove` を実行する。
+
+## 本番に公開する
+```bash
+npm run deploy
+```
+（`npx vercel deploy --prod` を直接使うと、GitHub のコミット作者が Vercel のメンバーではないため「Blocked」になります）

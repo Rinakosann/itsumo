@@ -34,7 +34,7 @@ unset KEY
 echo "   ✅ 登録しました"
 
 echo "③ 本番にもう一度公開しています（1分くらい）…"
-npx vercel deploy --prod --yes >/dev/null 2>&1
+zsh scripts/deploy.sh >/dev/null 2>&1
 echo "   ✅ 公開しました"
 
 echo ""
