@@ -25,8 +25,13 @@ async function mymemory(text, from, to) {
 // モデルは GEMINI_MODEL で変えられる
 const GEMINI_URL = (model) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
+// 無料枠の上限（429）に当たったら、しばらく Gemini を呼ばずに無料の機械翻訳を使う
+let geminiPausedUntil = 0;
+const geminiReady = () => Date.now() >= geminiPausedUntil;
+
 async function geminiCall(system, user) {
-  const res = await fetch(GEMINI_URL(process.env.GEMINI_MODEL || 'gemini-2.5-flash'), {
+  if (!geminiReady()) throw new Error('gemini paused (quota)');
+  const res = await fetch(GEMINI_URL(process.env.GEMINI_MODEL || 'gemini-flash-lite-latest'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
     body: JSON.stringify({
@@ -34,8 +39,9 @@ async function geminiCall(system, user) {
       contents: [{ role: 'user', parts: [{ text: user }] }],
       generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
     }),
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(15000),
   });
+  if (res.status === 429) { geminiPausedUntil = Date.now() + 60_000; throw new Error('gemini HTTP 429 (quota) — paused for 60s'); }
   if (!res.ok) throw new Error(`gemini HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
   const data = await res.json();
   const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
@@ -122,7 +128,7 @@ export async function translate(text, from, to) {
   if (!src) return '';
   if (from === to) return src;
   const pv = provider();
-  if (pv === 'gemini' || pv === 'claude') {
+  if ((pv === 'gemini' && geminiReady()) || pv === 'claude') {
     try {
       return pv === 'gemini' ? await gemini(src, from, to) : await claude(src, from, to);
     } catch (e) {
@@ -146,15 +152,18 @@ export async function jaToAllMany(list) {
   const result = items.map((ja) => ({ ja, ...Object.fromEntries(TR_LANGS.map((l) => [l.id, ja ? null : ''])) }));
   const todo = items.map((ja, i) => [ja, i]).filter(([ja]) => ja);
   if (!todo.length) return result;
-  if (provider() === 'gemini') {
+  let viaAi = provider() !== 'gemini'; // gemini 以外（claude / mymemory）は1つずつ translate()
+  if (provider() === 'gemini' && geminiReady()) {
     try {
       const out = await geminiMany(todo.map(([ja]) => ja));
       todo.forEach(([, i], k) => Object.assign(result[i], out[k]));
     } catch (e) {
-      console.error('gemini batch failed, translating one by one:', e.message);
+      console.error('gemini batch failed, using mymemory:', e.message);
     }
   }
-  await Promise.all(todo.flatMap(([ja, i]) => TR_LANGS.filter((l) => !result[i][l.id]).map(async (l) => { result[i][l.id] = await translate(ja, 'ja', l.id); })));
+  // 訳せなかった所だけ埋める。Gemini のまとめ訳に失敗したときは、Gemini を何度も呼ばずに無料の機械翻訳で
+  const one = async (ja, l) => (viaAi ? translate(ja, 'ja', l) : mymemoryLong(ja, 'ja', l).catch(() => null));
+  await Promise.all(todo.flatMap(([ja, i]) => TR_LANGS.filter((l) => !result[i][l.id]).map(async (l) => { result[i][l.id] = await one(ja, l.id); })));
   return result;
 }
 

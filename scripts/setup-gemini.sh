@@ -14,8 +14,8 @@ read -rs "KEY?> "
 echo ""
 KEY="${KEY//[[:space:]]/}"
 
-if [[ "$KEY" != AIza* ]]; then
-  echo "❌ キーは AIza で始まる文字列です。https://aistudio.google.com/apikey でコピーし直してください。"
+if [[ "$KEY" != AIza* && "$KEY" != AQ.* ]]; then
+  echo "❌ キーは AIza か AQ. で始まる文字列です。https://aistudio.google.com/apikey でコピーし直してください。"
   exit 1
 fi
 
