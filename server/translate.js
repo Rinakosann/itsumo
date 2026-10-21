@@ -52,8 +52,11 @@ async function geminiCall(system, user) {
 const glossaryText = () => GLOSSARY.map(([ja, en]) => `${ja} = ${en}`).join('\n');
 const SYSTEM = (extra) => `You translate text for ITSUMO, a booking app between foreign travelers and small local shops in Japan.
 Translate naturally and politely, as a friendly local would say it. Keep names, numbers, dates, times and prices exactly.
-For Japanese food and culture words, use this glossary (keep the Japanese word in romaji with a short explanation when helpful):
+Glossary of Japanese food and culture words with their English meaning:
 ${glossaryText()}
+Use the glossary only to understand the meaning. In English, follow the glossary wording.
+In Chinese and Korean, write natural native words (for example 熱燗 → 热清酒 / 따뜻한 사케, 常連さん → 常客 / 단골손님, おでん → 关东煮 / 오뎅).
+Never leave English words inside a Chinese or Korean translation.
 ${extra}`;
 
 /** 1つの文を from → to に訳す */
